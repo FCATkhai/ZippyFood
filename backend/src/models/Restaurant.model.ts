@@ -1,6 +1,7 @@
-const mongoose = require('mongoose');
-const Schema = mongoose.Schema;
-const Restaurant = new Schema({
+import mongoose, {Schema, Model} from 'mongoose';
+import { IRestaurant } from '../config/interface';
+
+const RestaurantSchema: Schema = new Schema({
     owner_id: {
         type: mongoose.Schema.Types.ObjectId, ref: 'User', required: true
     },
@@ -29,14 +30,15 @@ const Restaurant = new Schema({
             }
         }] /* thời gian hoạt động theo khung giờ */
     }],
-    status: {
-        type: String, enum: ['pending', 'approved', 'rejected'], default: 'pending'
-    } /* trạng thái phê duyệt của nhà hàng */,
+    // TODO: đưa status vào collection RestaurantApplication
+    // status: {
+    //     type: String, enum: ['pending', 'approved', 'rejected'], default: 'pending'
+    // } /* trạng thái phê duyệt của nhà hàng */,
     rating: {
         type: Number
     },
     createdAt: {
-        type: Date
+        type: Date, default: Date.now
     },
     location: {
         address: {
@@ -60,6 +62,8 @@ const Restaurant = new Schema({
             } /* longitude */
         } /* vị trí geocoding */
     },
-});
+}, 
+{timestamps: true});
 
-module.exports = mongoose.model('Restaurant', Restaurant);
+const Restaurant:Model<IRestaurant> = mongoose.model<IRestaurant>('Restaurant', RestaurantSchema);
+export default Restaurant;

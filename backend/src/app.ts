@@ -1,32 +1,28 @@
 import express from 'express';
+import cookiesParser from 'cookie-parser';
 import dotenv from 'dotenv';
-import restaurantRoute from './routes/restaurant.route';
-import uploadRoute from './routes/upload.route';
+
+import userRoutes from './routes/user.routes';
+import restaurantApplicationRoutes from './routes/restaurantApplication.routes';
+import restaurantRoutes from './routes/restaurant.routes';
 
 import cors from 'cors';
+
+import { errorHandler } from './middleware/error.middleware';
 
 dotenv.config();
 
 const app = express();
 app.use(cors());
 app.use(express.json());
+app.use(cookiesParser());
 
-app.use('/api/restaurants', restaurantRoute);
-app.use('/api/uploads', uploadRoute);
+app.use('/api/users', userRoutes);
+app.use('/api/restaurant-applications', restaurantApplicationRoutes);
+app.use('/api/restaurants', restaurantRoutes);
 
 
-
-// test upload file
-// const formData = new FormData();
-// formData.append("file", selectedFile);
-
-// const response = await fetch("http://localhost:5000/api/uploads", {
-//   method: "POST",
-//   body: formData,
-// });
-
-// const data = await response.json();
-// console.log(data.fileUrl); // URL ảnh
-
+// Use Middleware
+app.use(errorHandler);
 
 export default app;

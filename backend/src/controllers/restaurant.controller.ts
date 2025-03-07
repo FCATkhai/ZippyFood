@@ -1,29 +1,56 @@
-import { Request, Response } from 'express';
-import mongoose from 'mongoose';
-const Restaurant = require('../models/Restaurant');
+import { Request, Response, NextFunction } from 'express';
+import Restaurant from '../models/Restaurant.model';
 
-export const createRestaurant = async (req: Request, res: Response) => {
+
+export const createRestaurant = async (req: Request, res: Response, next: NextFunction): Promise<void> => {
     try {
-        const { name, user_id } = req.body;
-        const thumbnail = req.body.thumbnail || null;
+        if (!req.user) {
+            res.status(403);
+            throw new Error('Unauthorized');
+        }
+        const { name, address } = req.body;
+        const thumbnailUrl = req.file?.path;
+
         const restaurant = new Restaurant({
             name: name,
-            owner_id: new mongoose.Types.ObjectId(user_id),
-            thumbnail: thumbnail,
+            owner_id: req.user._id,
+            thumbnail: thumbnailUrl,
+            location: {
+                address: address
+            }
         });
 
         await restaurant.save();
         res.status(201).json({ success: true, data: restaurant });
     } catch (error) {
-        res.status(500).json({ success: false, message: (error as Error).message });
+        next(error);
     }
 };
 
-export const getRestaurants = async (req: Request, res: Response) => {
+export const getRestaurants = async (req: Request, res: Response, next: NextFunction) => {
     try {
         const restaurants = await Restaurant.find();
         res.status(200).json({ success: true, data: restaurants });
     } catch (error) {
-        res.status(500).json({ success: false, message: (error as Error).message });
+        next(error);
     }
 };
+
+
+// export const deleteRestaurant = async (req: Request, res: Response) => {
+//     const { id } = req.params;
+//     const restaurant = await Restaurant.findById(id);
+//     if (!restaurant) {
+//         res.status(404);
+//         throw new Error('Not found');
+//     }
+
+//     // Lấy public_id từ URL Cloudinary để xóa ảnh
+//     const imageUrl = restaurant.thumbnail;
+//     const publicId = imageUrl.split('/').pop()?.split('.')[0];
+
+//     await cloudinary.uploader.destroy(`restaurants/${publicId}`);
+
+//     await restaurant.deleteOne();
+//     res.json({ success: true, message: 'Nhà hàng đã bị xóa' });
+// };
