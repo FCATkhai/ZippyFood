@@ -32,7 +32,8 @@ export const authenticate = async (req: Request, res: Response, next: NextFuncti
 
 
 // Middleware xác thực + kiểm tra quyền truy cập dựa trên role
-export const authorize = (allowedRoles: string[]) => async (req: Request, res: Response, next: NextFunction) => {
+// nếu mảng allowRoles là [] nghĩa là tất cả user đã đăng nhập có quyền truy cập
+export const authorize = (allowedRoles: string[] = []) => async (req: Request, res: Response, next: NextFunction) => {
     try {
         // Xác thực người dùng (Authenticate)
         const token = req.cookies?.access_token;
@@ -52,7 +53,7 @@ export const authorize = (allowedRoles: string[]) => async (req: Request, res: R
         req.user = user;
 
         // Kiểm tra quyền hạn (Authorize)
-        if (!allowedRoles.includes(user.role as string)) {
+        if (allowedRoles.length != 0 && !allowedRoles.includes(user.role as string)) {
             res.status(403);
             throw new Error("Forbidden - You do not have permission");
         }

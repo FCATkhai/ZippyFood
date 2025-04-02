@@ -1,5 +1,5 @@
 import mongoose, {Schema, Model} from 'mongoose';
-import { IRestaurant } from '../config/interface';
+import { IRestaurant } from '~/shared/interface';
 
 const RestaurantSchema: Schema = new Schema({
     owner_id: {
@@ -30,10 +30,6 @@ const RestaurantSchema: Schema = new Schema({
             }
         }] /* thời gian hoạt động theo khung giờ */
     }],
-    // TODO: đưa status vào collection RestaurantApplication
-    // status: {
-    //     type: String, enum: ['pending', 'approved', 'rejected'], default: 'pending'
-    // } /* trạng thái phê duyệt của nhà hàng */,
     rating: {
         type: Number
     },

@@ -1,9 +1,10 @@
 import { v2 as cloudinary } from "cloudinary";
 import dotenv from "dotenv";
-import { NextFunction, Response } from "express";
-import { IUploadRequest } from "../config/interface";
+import { NextFunction, Response, Request } from "express";
+import { IUploadRequest } from "~/shared/interface";
 import multer from 'multer';
 import fs from "fs";
+import path from "path";
 
 dotenv.config();
 
@@ -13,9 +14,14 @@ cloudinary.config({
     api_secret: process.env.CLOUDINARY_API_SECRET,
 });
 
+const uploadDir = path.join(__dirname, 'uploads');
+if (!fs.existsSync(uploadDir)) {
+    fs.mkdirSync(uploadDir, { recursive: true });
+}
+
 const storage = multer.diskStorage({
     destination: (req, file, cb) => {
-        cb(null, './uploads/'); // Temporary storage folder
+        cb(null, uploadDir); // Temporary storage folder
     },
     filename: (req, file, cb) => {
         cb(null, `${Date.now()}-${file.originalname}`); // Unique filename
@@ -38,20 +44,18 @@ const cloudinaryUploadImage = async (filePath: string, folderName: string) => {
 // Middleware to upload a single image
 // before upload must declare upload.single('file') in route and folderName in req
 // uploaded image url will be stored in req.file.path
-const uploadImageMiddleware = async (req: IUploadRequest, res: Response, next: NextFunction) => {
+const uploadImageMiddleware = async (req: Request, res: Response, next: NextFunction) => {
+    //@ts-ignore
+    const uploadReq = req as IUploadRequest;
     try {
-        if (req.file) {
-            const filePath = req.file.path;
-            const folderName = req.folderName || "default";
+        if (uploadReq.file) {
+            const filePath = uploadReq.file.path;
+            const folderName = uploadReq.folderName || "default";
             const uploader = (path: string) => cloudinaryUploadImage(path, folderName);
             const uploadResult = await uploader(filePath);
             fs.unlinkSync(filePath);
-            req.file.path = uploadResult.secure_url;
-        } else {
-            res.status(400);
-            throw new Error("File not found");
-        }
-
+            uploadReq.file.path = uploadResult.secure_url;
+        } 
         next();
     } catch (error) {
         next(error);
@@ -82,10 +86,10 @@ const uploadImageMiddleware = async (req: IUploadRequest, res: Response, next: N
 //         res.status(400).json({ error: 'No images provided' });
 //     }
 // });
-// app.post('/upload', (req: CustomRequest, res: Response, next: NextFunction) => {
+// app.post('/upload', (req: IUploadRequest, res: Response, next: NextFunction) => {
 //     req.folderName = req.body.folderName || req.query.folderName || 'default';
 //     next();
-//   }, uploadFields, uploadImagesMiddleware, (req: CustomRequest, res: Response) => {
+//   }, uploadFields, uploadImagesMiddleware, (req: IUploadRequest, res: Response) => {
 //     if (req.imageUrls) {
 //       res.json({ imageUrls: req.imageUrls });
 //     } else {
@@ -93,17 +97,21 @@ const uploadImageMiddleware = async (req: IUploadRequest, res: Response, next: N
 //     }
 //   });
 
-const uploadMultipleImagesMiddleware = async (req: IUploadRequest, res: Response, next: NextFunction): Promise<void> => {
+const uploadMultipleImagesMiddleware = async (req: Request, res: Response, next: NextFunction): Promise<void> => {
+    //@ts-ignore
+    const uploadReq = req as IUploadRequest;
     try {
-        const folderName = req.folderName || 'default';
+        const folderName = uploadReq.folderName || 'default';
         const uploader = (filePath: string) => cloudinaryUploadImage(filePath, folderName);
 
-        if (req.files && typeof req.files === 'object') {
+        if (uploadReq.files && typeof uploadReq.files === 'object') {
             const uploadPromises: Promise<{ fieldname: string; url: string }>[] = [];
 
             // Iterate over each field name (e.g., 'avatar', 'cover')
-            for (const fieldname in req.files) {
-                const files = req.files[fieldname]; // Array of files for this field
+            for (const fieldname in uploadReq.files) {
+                console.log("fieldname: ",fieldname);
+                
+                const files = uploadReq.files[fieldname]; // Array of files for this field
                 files.forEach((file) => {
                     uploadPromises.push(
                         uploader(file.path).then((uploadResult) => {
@@ -116,18 +124,18 @@ const uploadMultipleImagesMiddleware = async (req: IUploadRequest, res: Response
             }
 
             const results = await Promise.all(uploadPromises);
-            req.imageUrls = {};
+            uploadReq.imageUrls = {};
             for (const { fieldname, url } of results) {
-                req.imageUrls[fieldname] = url;
+                uploadReq.imageUrls[fieldname] = url;
             }
         }
 
         next();
     } catch (error) {
         // Cleanup on error
-        if (req.files && typeof req.files === 'object') {
-            for (const fieldname in req.files) {
-                const files = req.files[fieldname];
+        if (uploadReq.files && typeof uploadReq.files === 'object') {
+            for (const fieldname in uploadReq.files) {
+                const files = uploadReq.files[fieldname];
                 files.map((file) => fs.unlinkSync(file.path));
             }
         }
@@ -163,4 +171,34 @@ const uploadMultipleImagesMiddleware = async (req: IUploadRequest, res: Response
 //     ]
 //   }
 
-export { upload, uploadImageMiddleware, uploadMultipleImagesMiddleware };
+const extractPublicID = (url:string) => {
+    const urlParts = url.split('/');
+    const lastPart = urlParts.pop(); 
+
+    const lastDotIndex = lastPart?.lastIndexOf('.');
+    if (lastDotIndex === -1) return null; // Ensure a valid format
+
+    const publicID = lastPart?.substring(0, lastDotIndex); 
+
+    return urlParts.slice(7).join('/') + '/' + publicID
+}
+
+const deleteImage = async (link: string = "") => {
+    if (link != "") {
+        const publicID = extractPublicID(link);
+        if (publicID === null) {
+            console.error("Error: Lỗi không tìm được publicID");
+            return;
+        } 
+        const { result } = await cloudinary.uploader.destroy(publicID);
+        if (result !== "ok") {
+            console.error("Error: Lỗi khi xoá ảnh");
+        }
+    } else {
+        console.error("không có link khi xoá ảnh hoặc link xoá là link mặc định");
+    }
+    
+}
+
+
+export { upload, uploadImageMiddleware, uploadMultipleImagesMiddleware, deleteImage };

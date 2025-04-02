@@ -7,7 +7,11 @@ import {
     updateUser,
     deleteUser,
     logoutUser,
-    upgradeToRestaurantOwner
+    changePassword,
+    upgradeToRestaurantOwner,
+    addAddress,
+    updateAddress,
+    deleteAddress
 } from '../controllers/user.controller';
 import { authorize } from '../middleware/auth.middleware';
 import { USER_GROUPS } from '../config/constants';
@@ -27,8 +31,15 @@ router.get('/profile', authorize(USER_GROUPS.ADMIN_ONLY), (req, res) => {
 });
 
 router.get('/:id', getUserById);
-router.put('/:id', authorize(USER_GROUPS.ALL_USERS), updateUser);
+router.put('/:id', authorize(USER_GROUPS.CUSTOMER_ADMIN), updateUser);
+router.patch('/:id', authorize(USER_GROUPS.ALL_USERS), updateUser);
+router.patch('/:id/change-password', authorize(USER_GROUPS.ALL_USERS), changePassword);
 router.delete('/:id', authorize(USER_GROUPS.ADMIN_ONLY), deleteUser);
+
+// address route
+router.post("/:id/addresses", authorize(USER_GROUPS.ALL_USERS), addAddress);
+router.put("/:id/addresses/:index", authorize(USER_GROUPS.ALL_USERS), updateAddress);
+router.delete("/:id/addresses/:index", authorize(USER_GROUPS.ALL_USERS), deleteAddress);
 
 
 router.get('/', authorize(USER_GROUPS.ADMIN_ONLY), getUsers);

@@ -1,5 +1,4 @@
 import { NextFunction, Request, Response } from 'express';
-import bcrypt from 'bcrypt';
 import jwt from 'jsonwebtoken';
 
 import { USER_ROLES } from '../config/constants';
@@ -25,21 +24,19 @@ export const createUser = async (req: Request, res: Response, next: NextFunction
             throw new Error("Email already exists");
         }
 
-        // Mã hóa mật khẩu
-        const hashedPassword = await bcrypt.hash(password, 10);
-
         // Tạo user mới
         const newUser = new User({
             name,
             email,
-            password: hashedPassword,
+            password,
             phone,
+            addresses: [],
             role: role || "customer", // Mặc định là "customer"
         });
 
         await newUser.save();
 
-        res.status(201).json({ message: "User created successfully", user: newUser });
+        res.status(201).json({ success: true, message: "User created successfully", user: newUser });
     } catch (error: unknown) {
         next(error);
     }
@@ -62,7 +59,7 @@ export const loginUser = async (req: Request, res: Response, next: NextFunction)
         }
 
         // Kiểm tra mật khẩu
-        const isMatch = await bcrypt.compare(password, user.password);
+        const isMatch = await user.comparePassword(password);
         if (!isMatch) {
             res.status(401);
             throw new Error("Invalid email or password");
@@ -82,6 +79,7 @@ export const loginUser = async (req: Request, res: Response, next: NextFunction)
         });
 
         res.json({
+            success: true,
             message: "Login successful",
             user: {
                 _id: user._id,
@@ -102,13 +100,8 @@ export const loginUser = async (req: Request, res: Response, next: NextFunction)
  */
 export const logoutUser = (req: Request, res: Response, next: NextFunction) => {
     try {
-        res.cookie("access_token", "", {
-            httpOnly: true,
-            expires: new Date(0), // Cookie hết hạn ngay lập tức
-            sameSite: "lax",
-        });
-    
-        res.json({ message: "Logged out successfully" });
+        res.clearCookie("access_token");
+        res.json({ success: true, message: "Logged out successfully" });
     } catch (error: unknown) {
         next(error);
     }
@@ -141,7 +134,7 @@ export const upgradeToRestaurantOwner = async (req: Request, res: Response, next
         user.role = USER_ROLES.RESTAURANT_OWNER;
         await user.save();
 
-        res.json({ message: "User upgraded to restaurant owner successfully", user });
+        res.json({ success: true, message: "User upgraded to restaurant owner successfully", user });
     } catch (error) {
         next(error);
     }
@@ -178,19 +171,76 @@ export const getUserById = async (req: Request, res: Response, next: NextFunctio
 
 /**
  *  Cập nhật thông tin user
- *  @route PUT /api/users/:id
- *  @access All users
+ *  @route PUT/PATCH /api/users/:id
+ *  @access All users (Only owner or admin)
  */
 export const updateUser = async (req: Request, res: Response, next: NextFunction) => {
     try {
-        const updatedUser = await User.findByIdAndUpdate(req.params.id, req.body, { new: true });
-        if (!updatedUser) {
+        const { id } = req.params;
+        const { name, email, phone } = req.body;
+
+        // Kiểm tra user tồn tại
+        const user = await User.findById(id);
+        if (!user) {
             res.status(404);
             throw new Error("User not found");
         }
 
-        res.json({ success: true, user: updatedUser });
-    } catch (error: unknown) {
+        // Kiểm tra quyền: user chỉ được sửa chính mình hoặc admin
+        if (req.user?._id.toString() !== id && req.user?.role !== USER_ROLES.ADMIN) {
+            res.status(403);
+            throw new Error("You are not authorized to update this user");
+        }
+
+        // Cập nhật các field (chỉ cho phép ["name", "email", "phone"])
+        if (name !== undefined) user.name = name;
+        if (email !== undefined) user.email = email;
+        if (phone !== undefined) user.phone = phone;
+
+        await user.save();
+
+        res.json({ success: true, user });
+    } catch (error) {
+        next(error);
+    }
+};
+
+/**
+ *  Thay đổi mật khẩu
+ *  @route PATCH /api/users/:id/change-password
+ *  @access All users (Only owner)
+ */
+export const changePassword = async (req: Request, res: Response, next: NextFunction) => {
+    try {
+        const { id } = req.params;
+        const { oldPassword, newPassword } = req.body;
+
+        // Kiểm tra user tồn tại
+        const user = await User.findById(id);
+        if (!user) {
+            res.status(404);
+            throw new Error("User not found");
+        }
+
+        // Chỉ cho phép user đổi mật khẩu chính mình
+        if (req.user?._id.toString() !== id) {
+            res.status(403);
+            throw new Error("You can only change your own password");
+        }
+
+        // Kiểm tra mật khẩu cũ
+        const isMatch = await user.comparePassword(oldPassword);
+        if (!isMatch) {
+            res.status(400);
+            throw new Error("Old password is incorrect");
+        }
+
+        // Cập nhật mật khẩu mới
+        user.password = newPassword;
+        await user.save();
+
+        res.json({ success: true, message: "Password changed successfully" });
+    } catch (error) {
         next(error);
     }
 };
@@ -213,3 +263,124 @@ export const deleteUser = async (req: Request, res: Response, next: NextFunction
         next(error);
     }
 };
+
+
+//--------- address route -----------
+
+/**
+ * Thêm địa chỉ mới cho user
+ * @route POST /api/users/:id/addresses
+ * @access Only owner or admin
+ */
+export const addAddress = async (req: Request, res: Response, next: NextFunction) => {
+    try {
+        const { id } = req.params;
+        const { address } = req.body;
+
+        if (!address) {
+            res.status(400);
+            throw new Error("Address is required");
+        }
+
+        // Kiểm tra user tồn tại
+        const user = await User.findById(id);
+        if (!user) {
+            res.status(404);
+            throw new Error("User not found");
+        }
+
+        // Kiểm tra quyền
+        if (req.user?._id.toString() !== id && req.user?.role !== USER_ROLES.ADMIN) {
+            res.status(403);
+            throw new Error("You are not authorized to update this user");
+        }
+
+        user.addresses.push(address);
+        await user.save();
+
+        res.json({ success: true, message: "Address added", addresses: user.addresses });
+    } catch (error) {
+        next(error);
+    }
+};
+
+/**
+ * Cập nhật địa chỉ của user
+ * @route PUT /api/users/:id/addresses/:index
+ * @access Only owner or admin
+ */
+export const updateAddress = async (req: Request, res: Response, next: NextFunction) => {
+    try {
+        const { id, index } = req.params;
+        const { address } = req.body;
+
+        if (!address) {
+            res.status(400);
+            throw new Error("Address is required");
+        }
+
+        // Kiểm tra user tồn tại
+        const user = await User.findById(id);
+        if (!user) {
+            res.status(404);
+            throw new Error("User not found");
+        }
+
+        // Kiểm tra quyền
+        if (req.user?._id.toString() !== id && req.user?.role !== USER_ROLES.ADMIN) {
+            res.status(403);
+            throw new Error("You are not authorized to update this user");
+        }
+
+        const idx = parseInt(index);
+        if (idx < 0 || idx >= user.addresses.length) {
+            res.status(400);
+            throw new Error("Invalid address index");
+        }
+
+        user.addresses[idx] = address;
+        await user.save();
+
+        res.json({ success: true, message: "Address updated", addresses: user.addresses });
+    } catch (error) {
+        next(error);
+    }
+};
+
+/**
+ * Xóa địa chỉ của user
+ * @route DELETE /api/users/:id/addresses/:index
+ * @access Only owner or admin
+ */
+export const deleteAddress = async (req: Request, res: Response, next: NextFunction) => {
+    try {
+        const { id, index } = req.params;
+
+        // Kiểm tra user tồn tại
+        const user = await User.findById(id);
+        if (!user) {
+            res.status(404);
+            throw new Error("User not found");
+        }
+
+        // Kiểm tra quyền
+        if (req.user?._id.toString() !== id && req.user?.role !== USER_ROLES.ADMIN) {
+            res.status(403);
+            throw new Error("You are not authorized to update this user");
+        }
+
+        const idx = parseInt(index);
+        if (idx < 0 || idx >= user.addresses.length) {
+            res.status(400);
+            throw new Error("Invalid address index");
+        }
+
+        user.addresses.splice(idx, 1);
+        await user.save();
+
+        res.json({ success: true, message: "Address deleted", addresses: user.addresses });
+    } catch (error) {
+        next(error);
+    }
+};
+
