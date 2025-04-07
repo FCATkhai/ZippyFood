@@ -26,5 +26,3 @@ export const login = async (email: string, password: string) => {
 export const logout = async () => {
     await axios.post<IErrorResponse>(`${API_URL}/logout`);
 };
-
-

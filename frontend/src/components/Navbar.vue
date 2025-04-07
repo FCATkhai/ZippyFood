@@ -26,7 +26,7 @@
                     <!-- <li class="mb-2">
                         <RouterLink :to="profileLink">Hồ sơ</RouterLink>
                     </li> -->
-                    <li >
+                    <li>
                         <RouterLink @click="authStore.logout" to="/" class="bg-error color-base text-base-100">Logout
                         </RouterLink>
                     </li>
@@ -41,28 +41,41 @@
                 <RouterLink to="/About">Giới thiệu</RouterLink>
             </li>
             <li>
-                    <RouterLink to="/contact">Liên hệ</RouterLink>
-                </li>
+                <RouterLink to="/contact">Liên hệ</RouterLink>
+            </li>
             <li v-if="role === USER_ROLES.ADMIN">
                 <RouterLink to="/admin">Quản lý</RouterLink>
             </li>
-            <div v-if="authStore.isAuthenticated" class="dropdown dropdown-end">
-                <div tabindex="0" role="button" class="btn btn-ghost btn-circle avatar">
-                    <div class="w-10 rounded-full align-middle">
-                        <i class="fa-solid fa-user text-2xl pt-2"></i>
-                    </div>
-                </div>
-                <ul tabindex="0" class="menu menu-md dropdown-content bg-base-100 rounded-box z-1 mt-3 w-52 p-2 shadow">
-                    <!-- <li class="mb-2">
-                        <RouterLink :to="profileLink">Hồ sơ</RouterLink>
-                    </li> -->
+            <li v-if="role === USER_ROLES.RESTAURANT_OWNER">
+                <RouterLink to="/restaurant-manage">Quản lý</RouterLink>
+            </li>
 
-                    <li>
-                        <RouterLink @click="authStore.logout" to="/" class="bg-error color-base text-base-100">Logout
-                        </RouterLink>
-                    </li>
-                </ul>
-            </div>
+            <template v-if="authStore.isAuthenticated">
+                <CardIcon />
+
+                <div class="dropdown dropdown-end">
+                    <div tabindex="1" role="button" class="btn btn-ghost btn-circle avatar">
+                        <div class="w-10 rounded-full align-middle">
+                            <i class="fa-solid fa-user text-2xl pt-2"></i>
+                        </div>
+                    </div>
+                    <ul tabindex="1"
+                        class="menu menu-md dropdown-content bg-base-100 rounded-box z-1 mt-3 w-52 p-2 shadow">
+                        <!-- <li class="mb-2">
+                            <RouterLink :to="profileLink">Hồ sơ</RouterLink>
+                        </li> -->
+                        <li class="mb-2">
+                            <RouterLink to="/order-history">Xem đơn hàng</RouterLink>
+                        </li>
+
+                        <li>
+                            <RouterLink @click="handleLogout" to="/" class="bg-error color-base text-base-100">
+                                Logout
+                            </RouterLink>
+                        </li>
+                    </ul>
+                </div>
+            </template>
             <RouterLink v-else to="/login" class="btn btn-sm btn-primary">Login</RouterLink>
         </ul>
     </nav>
@@ -73,18 +86,25 @@ import { computed } from 'vue';
 import { useAuthStore } from '@/stores/auth.store';
 import { useRouter, useRoute, RouterLink } from 'vue-router';
 import { USER_ROLES } from '~/shared/userRoles';
+import CardIcon from './CardIcon.vue';
 
 const authStore = useAuthStore();
+
 const router = useRouter();
 const route = useRoute();
 
-const user = computed(() => authStore.user);
-const role = computed(() => user.value?.role);
+
 // const profileLink = computed(() => {
 //     return user.value?.role === USER_ROLES.NHANVIEN || user.value?.role === USER_ROLES.QUANLY
 //         ? "/admin/profile"
 //         : "/profile";
 // });
+
+const user = computed(() => authStore.user);
+const role = computed(() => user.value?.role);
+const handleLogout = async () => {
+    await authStore.logout();
+}
 
 </script>
 

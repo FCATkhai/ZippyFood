@@ -34,7 +34,7 @@ export const getCategoriesByRestaurant = async (req: Request, res: Response, nex
         const { restaurant_id } = req.params;
         const categories = await Category.find({ restaurant_id });
 
-        res.json(categories);
+        res.json({success: true, categories });
     } catch (error) {
         next(error);
     }

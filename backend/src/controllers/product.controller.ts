@@ -1,10 +1,12 @@
 import { Request, Response, NextFunction } from "express";
 import Product from "../models/Product.model";
+import { deleteImage } from "../middleware/upload";
+import { ICategory } from "~/shared/interface";
 
 /**
  * Tạo món ăn mới
  * @route POST /api/products
- * @access owner_admin
+ * @access owner
  */
 export const createProduct = async (req: Request, res: Response, next: NextFunction): Promise<void> => {
     try {
@@ -15,8 +17,9 @@ export const createProduct = async (req: Request, res: Response, next: NextFunct
             throw new Error("Restaurant ID, Name, Price, and Category ID are required");
         }
 
-        //TODO: Tạm tời để tags được nhập trực tiếp dạng mảng, sửa lại sau
-        const arrTags = JSON.parse(tags.replace(/^"|"$/g, ''));
+        //tag được nhận dạng mảng
+        // const arrTags = JSON.parse(tags.replace(/^"|"$/g, ''));
+        const arrTags = tags ? JSON.parse(tags) : [];
         const imageUrl = req.file?.path;
         const product = new Product({
             restaurant_id,
@@ -30,8 +33,9 @@ export const createProduct = async (req: Request, res: Response, next: NextFunct
         });
 
         await product.save();
-        res.status(201).json({ message: "Product created successfully", product });
+        res.status(201).json({ success: true, message: "Product created successfully", product });
     } catch (error) {
+        await deleteImage(req.file?.path); // Xóa ảnh mới tải lên nếu có lỗi xảy ra
         next(error);
     }
 };
@@ -46,61 +50,7 @@ export const getProductsByRestaurant = async (req: Request, res: Response, next:
         const { restaurant_id } = req.params;
         const products = await Product.find({ restaurant_id });
 
-        res.json(products);
-    } catch (error) {
-        next(error);
-    }
-};
-
-/**
- * Cập nhật món ăn
- * @route PATCH /api/products/:id
- * @access owner_admin
- */
-export const updateProduct = async (req: Request, res: Response, next: NextFunction): Promise<void> => {
-    try {
-        const { id } = req.params;
-        const { name, description, tags, image, price, discount, status, category_id } = req.body;
-
-        const product = await Product.findById(id);
-        if (!product) {
-            res.status(404);
-            throw new Error("Product not found");
-        }
-
-        if (name) product.name = name;
-        if (description) product.description = description;
-        if (tags) product.tags = tags;
-        if (image) product.image = image;
-        if (price) product.price = price;
-        if (discount !== undefined) product.discount = discount;
-        if (status) product.status = status;
-        if (category_id) product.category_id = category_id;
-
-        await product.save();
-        res.json({ message: "Product updated successfully", product });
-    } catch (error) {
-        next(error);
-    }
-};
-
-/**
- * Xóa món ăn
- * @route DELETE /api/products/:id
- * @access owner_admin
- */
-export const deleteProduct = async (req: Request, res: Response, next: NextFunction): Promise<void> => {
-    try {
-        const { id } = req.params;
-
-        const product = await Product.findById(id);
-        if (!product) {
-            res.status(404);
-            throw new Error("Product not found");
-        }
-
-        await product.deleteOne();
-        res.json({ message: "Product deleted successfully" });
+        res.json({ success: true, products});
     } catch (error) {
         next(error);
     }
@@ -121,7 +71,7 @@ export const getProductsGroupedByCategory = async (req: Request, res: Response, 
         const groupedProducts: Record<string, typeof products> = {};
 
         for (const product of products) {
-            const categoryName = product.category_id ? (product.category_id as any).name : "Uncategorized";
+            const categoryName = product.category_id ? (product.category_id as ICategory).name : "Uncategorized";
 
             if (!groupedProducts[categoryName]) {
                 groupedProducts[categoryName] = [];
@@ -130,9 +80,74 @@ export const getProductsGroupedByCategory = async (req: Request, res: Response, 
             groupedProducts[categoryName].push(product);
         }
 
-        res.json(groupedProducts);
+        res.json({success: true, groupedProducts});
     } catch (error) {
         next(error);
     }
 };
+
+/**
+ * Cập nhật món ăn
+ * @route PATCH /api/products/:id
+ * @access owner
+ */
+export const updateProduct = async (req: Request, res: Response, next: NextFunction): Promise<void> => {
+    try {
+        const { id } = req.params;
+        const { name, description, tags, price, discount, status, category_id } = req.body;
+        const arrTags = tags ? JSON.parse(tags) : [];
+        const imageUrl = req.file?.path;
+
+        const product = await Product.findById(id);
+        if (!product) {
+            res.status(404);
+            throw new Error("Product not found");
+        }
+
+        if (imageUrl) {
+            deleteImage(product.image); // Xóa ảnh cũ nếu có
+        }
+
+        if (name) product.name = name;
+        if (description) product.description = description;
+        if (arrTags) product.tags = arrTags;
+        if (imageUrl) product.image = imageUrl;
+        if (price) product.price = price;
+        if (discount) product.discount = discount;
+        if (status) product.status = status;
+        if (category_id) product.category_id = category_id;
+
+        await product.save();
+        res.json({ success: true, message: "Product updated successfully", product });
+    } catch (error) {
+        await deleteImage(req.file?.path); // Xóa ảnh mới tải lên nếu có lỗi xảy ra
+
+        next(error);
+    }
+};
+
+/**
+ * Xóa món ăn
+ * @route DELETE /api/products/:id
+ * @access owner
+ */
+export const deleteProduct = async (req: Request, res: Response, next: NextFunction): Promise<void> => {
+    try {
+        const { id } = req.params;
+
+        const product = await Product.findById(id);
+        if (!product) {
+            res.status(404);
+            throw new Error("Product not found");
+        }
+        await deleteImage(product.image); // Xóa ảnh liên quan đến món ăn
+
+        await product.deleteOne();
+        res.json({ success: true, message: "Product deleted successfully" });
+    } catch (error) {
+        next(error);
+    }
+};
+
+
 

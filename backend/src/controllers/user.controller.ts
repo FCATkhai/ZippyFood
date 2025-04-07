@@ -1,3 +1,4 @@
+/* eslint-disable prefer-const */
 import { NextFunction, Request, Response } from 'express';
 import jwt from 'jsonwebtoken';
 
@@ -7,10 +8,11 @@ import dotenv from 'dotenv';
 dotenv.config();
 
 import User from '../models/User.model';
+import { FilterQuery, SortOrder } from 'mongoose';
 
 /**
  *  Đăng ký tài khoản
- *  @route POST /api/users
+ *  @route POST /api/users/register
  *  @access Public
  */
 export const createUser = async (req: Request, res: Response, next: NextFunction): Promise<void> => {
@@ -66,8 +68,8 @@ export const loginUser = async (req: Request, res: Response, next: NextFunction)
         }
         // Tạo JWT token
         const token = jwt.sign(
-            { _id: user._id, role: user.role }, 
-            process.env.JWT_SECRET as jwt.Secret, 
+            { _id: user._id, role: user.role },
+            process.env.JWT_SECRET as jwt.Secret,
             { expiresIn: process.env.JWT_EXPIRES_IN } as jwt.SignOptions);
 
         // Lưu token vào cookie
@@ -85,7 +87,10 @@ export const loginUser = async (req: Request, res: Response, next: NextFunction)
                 _id: user._id,
                 name: user.name,
                 email: user.email,
-                role: user.role
+                role: user.role,
+                addresses: user.addresses,
+                phone: user.phone,
+                status: user.status,
             }
         });
     } catch (error: unknown) {
@@ -108,48 +113,98 @@ export const logoutUser = (req: Request, res: Response, next: NextFunction) => {
 };
 
 /**
- *  Nâng hạng từ customer lên restaurant owner
- *  @route POST /api/users/upgrade
- *  @access customer_admin
+ *  Đổi vai trò của user
+ *  @route PATCH /api/users/change-role
+ *  @access admin
  */
-export const upgradeToRestaurantOwner = async (req: Request, res: Response, next: NextFunction): Promise<void> => {
+export const changeUserRole = async (req: Request, res: Response, next: NextFunction): Promise<void> => {
     try {
-        const userId = req.user?._id; // Lấy userId từ middleware xác thực
-        if (!userId) {
-            res.status(401);
-            throw new Error("Unauthorized");
-        }
+        // const userId = req.user?._id; // Lấy userId từ middleware xác thực
+        const { id, role } = req.body;
+        console.log(id);
 
-        const user = await User.findById(userId);
+        const user = await User.findById(id);
         if (!user) {
             res.status(404);
             throw new Error("User not found");
         }
-        
-        if (user.role === USER_ROLES.RESTAURANT_OWNER) {
-            res.status(400);
-            throw new Error("User is already a restaurant owner");
+
+        if (req.user.role !== USER_ROLES.ADMIN) {
+            res.status(403);
+            throw new Error("You cannot change user's role");
         }
 
-        user.role = USER_ROLES.RESTAURANT_OWNER;
-        await user.save();
+        //TODO: Cài đặt tạm thời để không thể đổi quyền admin sang các quyền khác
+        if (user.role !== USER_ROLES.ADMIN) {
+            user.role = role;
+            await user.save();
+        }
 
-        res.json({ success: true, message: "User upgraded to restaurant owner successfully", user });
+
+        //TODO: Code hoàn chỉnh
+        // user.role = role;        
+        // await user.save();
+
+
+        res.json({ success: true, message: "Change user role successfully", user });
     } catch (error) {
         next(error);
     }
 };
 
 /**
- *  Lấy danh sách tất cả user
- *  @route GET /api/users/
- *  @access admin
+ * Lấy danh sách tất cả user
+ * @route GET /api/users/
+ * @access admin
  */
 export const getUsers = async (req: Request, res: Response, next: NextFunction) => {
     try {
-        const users = await User.find();
-        res.json({ success: true, users });
-    } catch (error: unknown) {
+        let {
+            page = 1,
+            limit = 10,
+            search = "",
+            role = "",
+            sort = "desc" // Default sort descending
+        } = req.query;
+
+        page = Number(page);
+        limit = Number(limit);
+        const query: FilterQuery<unknown> = {};
+
+        if (search) {
+            query.$or = [
+                { name: { $regex: search, $options: "i" } },
+                { email: { $regex: search, $options: "i" } },
+                { phone: { $regex: search, $options: "i" } }
+            ];
+        }
+
+        // Add role filter
+        if (role && ['customer', 'restaurant_owner', 'admin'].includes(role as string)) {
+            query.role = role;
+        }
+
+        const total = await User.countDocuments(query);
+
+        const sortOption: { [key: string]: SortOrder } = { createdAt: sort === "desc" ? -1 : 1 };
+
+        const userList = await User.find(query)
+            .select("-password")
+            .sort(sortOption)
+            .skip((page - 1) * limit)
+            .limit(limit);
+
+        const hasMore = page * limit < total;
+
+        res.status(200).json({
+            total,
+            page,
+            limit,
+            totalPages: Math.ceil(total / limit),
+            hasMore,
+            data: userList
+        });
+    } catch (error) {
         next(error);
     }
 };
@@ -157,7 +212,7 @@ export const getUsers = async (req: Request, res: Response, next: NextFunction) 
 // Lấy thông tin 1 user theo ID
 export const getUserById = async (req: Request, res: Response, next: NextFunction) => {
     try {
-        const user = await User.findById(req.params.id);
+        const user = await User.findById(req.params.id).select("-password");
         if (!user) {
             res.status(404);
             throw new Error("User not found");
@@ -267,6 +322,20 @@ export const deleteUser = async (req: Request, res: Response, next: NextFunction
 
 //--------- address route -----------
 
+// Middleware để kiểm tra quyền truy cập của người dùng
+const ensureAuthorizedUser = async (req: Request, res: Response, userId: string) => {
+    const user = await User.findById(userId);
+    if (!user) {
+        res.status(404);
+        throw new Error("User not found");
+    }
+    if (req.user?._id.toString() !== userId && req.user?.role !== USER_ROLES.ADMIN) {
+        res.status(403);
+        throw new Error("You are not authorized to update this user");
+    }
+    return user;
+};
+
 /**
  * Thêm địa chỉ mới cho user
  * @route POST /api/users/:id/addresses
@@ -277,24 +346,12 @@ export const addAddress = async (req: Request, res: Response, next: NextFunction
         const { id } = req.params;
         const { address } = req.body;
 
-        if (!address) {
+        if (!address || typeof address !== "string" || address.trim() === "") {
             res.status(400);
             throw new Error("Address is required");
         }
 
-        // Kiểm tra user tồn tại
-        const user = await User.findById(id);
-        if (!user) {
-            res.status(404);
-            throw new Error("User not found");
-        }
-
-        // Kiểm tra quyền
-        if (req.user?._id.toString() !== id && req.user?.role !== USER_ROLES.ADMIN) {
-            res.status(403);
-            throw new Error("You are not authorized to update this user");
-        }
-
+        const user = await ensureAuthorizedUser(req, res, id);
         user.addresses.push(address);
         await user.save();
 
@@ -314,26 +371,15 @@ export const updateAddress = async (req: Request, res: Response, next: NextFunct
         const { id, index } = req.params;
         const { address } = req.body;
 
-        if (!address) {
+        if (!address || typeof address !== "string" || address.trim() === "") {
             res.status(400);
             throw new Error("Address is required");
         }
 
-        // Kiểm tra user tồn tại
-        const user = await User.findById(id);
-        if (!user) {
-            res.status(404);
-            throw new Error("User not found");
-        }
+        const user = await ensureAuthorizedUser(req, res, id);
 
-        // Kiểm tra quyền
-        if (req.user?._id.toString() !== id && req.user?.role !== USER_ROLES.ADMIN) {
-            res.status(403);
-            throw new Error("You are not authorized to update this user");
-        }
-
-        const idx = parseInt(index);
-        if (idx < 0 || idx >= user.addresses.length) {
+        const idx = parseInt(index, 10);
+        if (isNaN(idx) || idx < 0 || idx >= user.addresses.length) {
             res.status(400);
             throw new Error("Invalid address index");
         }
@@ -356,21 +402,10 @@ export const deleteAddress = async (req: Request, res: Response, next: NextFunct
     try {
         const { id, index } = req.params;
 
-        // Kiểm tra user tồn tại
-        const user = await User.findById(id);
-        if (!user) {
-            res.status(404);
-            throw new Error("User not found");
-        }
+        const user = await ensureAuthorizedUser(req, res, id);
 
-        // Kiểm tra quyền
-        if (req.user?._id.toString() !== id && req.user?.role !== USER_ROLES.ADMIN) {
-            res.status(403);
-            throw new Error("You are not authorized to update this user");
-        }
-
-        const idx = parseInt(index);
-        if (idx < 0 || idx >= user.addresses.length) {
+        const idx = parseInt(index, 10);
+        if (isNaN(idx) || idx < 0 || idx >= user.addresses.length) {
             res.status(400);
             throw new Error("Invalid address index");
         }

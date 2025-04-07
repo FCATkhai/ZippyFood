@@ -11,7 +11,7 @@ const UserSchema: Schema = new Schema({
     role: {type: String, require: true, enum: ['customer', 'restaurant_owner', 'admin'], default: 'customer'} /* vai trò của người dùng */,
     addresses: [{type: String}],
     status: {type: String, enum: ['active', 'banned'], default: 'active'}
-});
+}, {timestamps: true});
 
 /** Hash password before saving */
 UserSchema.pre<IUser>("save", async function (next) {

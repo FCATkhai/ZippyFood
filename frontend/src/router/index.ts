@@ -4,8 +4,9 @@ import { createRouter, createWebHistory } from 'vue-router'
 import AppLayout from '@/layouts/AppLayout.vue'
 import BlankLayout from '@/layouts/BlankLayout.vue'
 import AdminLayout from '@/layouts/AdminLayout.vue'
+import MerchantLayout from '@/layouts/MerchantLayout.vue'
 
-import { USER_ROLES } from '~/shared/userRoles'
+import { USER_GROUPS } from '~/shared/userRoles'
 import { useAuthStore } from '@/stores/auth.store'
 
 const routes = [
@@ -50,22 +51,86 @@ const routes = [
         }
     },
     {
+        path: '/notifications',
+        name: 'order-notifications',
+        component: () => import('@/views/NotificationView.vue'),
+        meta: {
+            layout: AppLayout,
+            requireAuth: true
+        }
+    },
+    {
+        path: '/restaurants',
+        name: 'restaurants',
+        component: () => import('@/views/RestaurantsView.vue'),
+        meta: {
+            layout: AppLayout,
+        }
+    },
+    {
+        path: '/restaurant/:id',
+        name: 'restaurantDetail',
+        component: () => import('@/views/RestaurantDetailView.vue'),
+        meta: {
+            layout: AppLayout,
+        }
+    },
+    {
+        path: '/checkout',
+        name: 'checkout',
+        component: () => import('@/views/CheckoutView.vue'),
+        meta: {
+            layout: AppLayout,
+            requireAuth: true
+        }
+    },
+    {
+        path: '/order-history',
+        name: 'order-history',
+        component: () => import('@/views/OrderHistoryView.vue'),
+        meta: {
+            layout: AppLayout,
+            requireAuth: true
+        }
+    },
+    {
+        path: '/restaurant-register',
+        name: 'register-restaurant',
+        component: () => import('@/views/Restaurant/RegisterRestaurantApplication.vue'),
+        meta: {
+            layout: AppLayout,
+            roles: USER_GROUPS.CUSTOMER_ADMIN
+        }
+    },
+    {
+        path: "/restaurant-manage/restaurant-complete",
+        name: "restaurant-complete",
+        component: () => import("@/views/Merchant/CompleteCreateRestaurant.vue"),
+        meta: {
+            layout: BlankLayout,
+            roles: USER_GROUPS.RESTAURANT_OWNER
+        }
+    },
+    {
+        path: "/restaurant-manage",
+        component: MerchantLayout,
+        meta: { requiresAuth: true, roles: USER_GROUPS.RESTAURANT_OWNER },
+        children: [
+            { path: "", name: "dashboard-merchant", component: () => import("@/views/Merchant/Dashboard.vue") },
+            { path: "setting", name: "restaurant-setting", component: () => import("@/views/Merchant/ManageRestaurant_Merchant.vue") },
+            { path: "product", name: "product-merchant", component: () => import("@/views/Merchant/ManageProduct.vue") },
+            { path: "order", name: "order-merchant", component: () => import("@/views/Merchant/ManageOrder_Merchant.vue") },
+        ],
+    },
+    {
         path: "/admin",
         component: AdminLayout,
-        meta: { requiresAuth: true, roles: [USER_ROLES.NHANVIEN, USER_ROLES.QUANLY] },
+        meta: { requiresAuth: true, roles: USER_GROUPS.ADMIN_ONLY },
         children: [
-            { path: "", name: "Dashboard", component: () => import("@/views/admin/Dashboard.vue") },
-            { path: "profile", name: "AdminProfile", component: () => import("@/views/admin/profileNhanVien.vue") },
-            { path: "nxb", name: "QLNXB", component: () => import("@/views/admin/QLNXB.vue") },
-            { path: "sach", name: "QLSach", component: () => import("@/views/admin/QLSach.vue") },
-            { path: "phieu-muon", name: "QLPhieuMuon", component: () => import("@/views/admin/QLPhieuMuon.vue") },
-            { path: "doc-gia", name: "QLDocGia", component: () => import("@/views/admin/QLDocGia.vue") },
-            {
-                path: "nhan-vien",
-                name: "QLNhanVien",
-                component: () => import("@/views/admin/QLNhanVien.vue"),
-                meta: { roles: [USER_ROLES.QUANLY] }, // Chỉ quản lý mới có quyền
-            },
+            { path: "", name: "dashboard-admin", component: () => import("@/views/admin/Dashboard.vue") },
+            { path: "restaurant-application", name: "restaurant-application", component: () => import("@/views/admin/ManageRestaurantApplication.vue") },
+            { path: "restaurant", name: "restaurant", component: () => import("@/views/admin/ManageRestaurant_Admin.vue") },
+            { path: "order", name: "order", component: () => import("@/views/admin/ManageOrder_Admin.vue") },
         ],
     },
 ]

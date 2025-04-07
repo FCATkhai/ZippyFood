@@ -5,7 +5,7 @@
 
             <div class="mb-4">
                 <label class="block">Email:</label>
-                <input v-model="email" class="input validator" type="email" required placeholder="Email" />
+                <input v-model="email" class="input validator w-full p-2" type="email" required placeholder="Email" />
                 <div class="hidden validator-hint">Xin nhập Email đúng định dạng</div>
             </div>
 
@@ -39,9 +39,11 @@ import { ref } from "vue";
 import { useAuthStore } from "@/stores/auth.store";
 import { useRouter } from "vue-router";
 import { USER_ROLES } from "~/shared/userRoles";
+import { useRestaurantStore } from "@/stores/restaurantStore";
 
 const authStore = useAuthStore();
-const user = authStore.user;
+const restaurantStore = useRestaurantStore();
+
 const router = useRouter();
 
 const email = ref("");
@@ -51,9 +53,11 @@ const errorMsg = ref("");
 const handleLogin = async () => {
     try {
         await authStore.login(email.value, password.value);
+        const user = authStore.user;
         if (user.role == USER_ROLES.ADMIN) {
             router.push("/admin");
         } else if (user.role == USER_ROLES.RESTAURANT_OWNER) {
+            await restaurantStore.fetchRestaurant(user._id);
             router.push("/restaurant-manage");
         } else {
             router.push("/");

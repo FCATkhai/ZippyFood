@@ -20,14 +20,9 @@
                     <h2 class="text-xl font-bold mb-2">Quản lý</h2>
 
                     <li><RouterLink to="/admin" class="block py-2"><i class="fa-solid fa-chart-simple"></i> Dashboard</RouterLink></li>
-                    <li><RouterLink to="/admin/nxb" class="block py-2"><i class="fa-solid fa-building-user"></i> Quản lý NXB</RouterLink></li>
-                    <li><RouterLink to="/admin/sach" class="block py-2"><i class="fa-solid fa-book"></i> Quản lý Sách</RouterLink></li>
-                    <li><RouterLink to="/admin/phieu-muon" class="block py-2"><i class="fa-solid fa-receipt"></i> Quản lý Phiếu Mượn</RouterLink></li>
-                    <li><RouterLink to="/admin/doc-gia" class="block py-2"><i class="fa-solid fa-users"></i> Quản lý Độc Giả</RouterLink></li>
-                    <li>
-                        <RouterLink v-if="isManager" to="/admin/nhan-vien" class="block py-2"><i class="fa-solid fa-user-tie"></i> Quản lý Nhân Viên
-                        </RouterLink>
-                    </li>
+                    <li><RouterLink to="/admin/restaurant-application" class="block py-2"><i class="fa-solid fa-building-user"></i> Quản lý Đơn ĐK</RouterLink></li>
+                    <li><RouterLink to="/admin/restaurant" class="block py-2"><i class="fa-solid fa-building-user"></i> Quản lý Nhà Hàng</RouterLink></li>
+                    <li><RouterLink to="/admin/order" class="block py-2"><i class="fa-solid fa-receipt"></i> Quản lý Đơn Hàng</RouterLink></li>
                 </ul>
             </div>
         </div>
@@ -42,5 +37,5 @@ import { useAuthStore } from "@/stores/auth.store";
 import { USER_ROLES } from "~/shared/userRoles";
 
 const authStore = useAuthStore();
-const isManager = computed(() => authStore.user?.role === USER_ROLES.QUANLY);
+const isManager = computed(() => authStore.user?.role === USER_ROLES.ADMIN);
 </script>

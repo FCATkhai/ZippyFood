@@ -2,21 +2,12 @@ import mongoose, {Schema, Model} from 'mongoose';
 import { IRestaurant } from '~/shared/interface';
 
 const RestaurantSchema: Schema = new Schema({
-    owner_id: {
-        type: mongoose.Schema.Types.ObjectId, ref: 'User', required: true
-    },
-    name: {
-        type: String, required: true
-    },
-    thumbnail: {
-        type: String
-    },
-    phone: {
-        type: String
-    },
-    is_active: {
-        type: Boolean, default: false
-    } /* trạng thái hoạt động của nhà hàng */,
+    // 1 chủ nhà hàng chỉ có 1 hàng hàng -> owner_id unique
+    owner_id: {type: mongoose.Schema.Types.ObjectId, ref: 'User', required: true, unique: true},
+    name: {type: String, required: true, unique: true},
+    thumbnail: {type: String, require: true},
+    phone: {type: String},
+    is_active: {type: Boolean, default: false} /* trạng thái hoạt động của nhà hàng */,
     open_hours: [{
         day: {
             type: String
@@ -30,12 +21,7 @@ const RestaurantSchema: Schema = new Schema({
             }
         }] /* thời gian hoạt động theo khung giờ */
     }],
-    rating: {
-        type: Number
-    },
-    createdAt: {
-        type: Date, default: Date.now
-    },
+    rating: {type: Number, default: 0},
     location: {
         address: {
             type: String

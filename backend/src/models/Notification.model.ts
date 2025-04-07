@@ -4,26 +4,11 @@ import { INotification } from "~/shared/interface";
 
 const NotificationSchema: Schema = new Schema(
     {
-        user_id: {
-            type: mongoose.Schema.Types.ObjectId,
-            ref: "User",
-            required: true,
-        },
-        title: {
-            type: String,
-            required: true,
-        },
-        content: {
-            type: String,
-            required: true,
-        },
-        url: {
-            type: String,
-        },
-        is_read: {
-            type: Boolean,
-            default: false,
-        },
+        user_id: { type: mongoose.Schema.Types.ObjectId, ref: "User", required: true, },
+        title: { type: String, required: true, },
+        content: { type: String, required: true, },
+        url: { type: String, },
+        is_read: { type: Boolean, default: false, },
     },
     { timestamps: true }
 );

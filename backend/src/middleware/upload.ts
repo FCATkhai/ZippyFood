@@ -1,7 +1,7 @@
 import { v2 as cloudinary } from "cloudinary";
 import dotenv from "dotenv";
 import { NextFunction, Response, Request } from "express";
-import { IUploadRequest } from "~/shared/interface";
+import { IUploadRequest } from "../config/interface";
 import multer from 'multer';
 import fs from "fs";
 import path from "path";
@@ -30,13 +30,17 @@ const storage = multer.diskStorage({
 const upload = multer({ storage });
 
 
-const cloudinaryUploadImage = async (filePath: string, folderName: string) => {
+const cloudinaryUploadImage = async (
+    filePath: string, 
+    folderName: string, 
+    transformationOptions: { width: number, height: number, crop: string } = { width: 1000, height: 1000, crop: "limit" },
+) => {
     return await cloudinary.uploader.upload(
         filePath,
         {
             folder: `ZippyFood/${folderName}`,
             resource_type: "auto",
-            transformation: [{ width: 500, height: 500, crop: "limit" }],
+            transformation: [transformationOptions],
         },
     )
 };
@@ -51,7 +55,8 @@ const uploadImageMiddleware = async (req: Request, res: Response, next: NextFunc
         if (uploadReq.file) {
             const filePath = uploadReq.file.path;
             const folderName = uploadReq.folderName || "default";
-            const uploader = (path: string) => cloudinaryUploadImage(path, folderName);
+            const transformationOptions = uploadReq.transformationOptions || { width: 1000, height: 1000, crop: "limit" };
+            const uploader = (path: string) => cloudinaryUploadImage(path, folderName, transformationOptions);
             const uploadResult = await uploader(filePath);
             fs.unlinkSync(filePath);
             uploadReq.file.path = uploadResult.secure_url;
@@ -63,7 +68,8 @@ const uploadImageMiddleware = async (req: Request, res: Response, next: NextFunc
 };
 
 // Middleware to upload multiple images
-// before upload must declare upload.fields([...]) in route and folderName in req
+// before upload must declare upload.fields([...]) in route and folderName in req, 
+// transformationOptions is optional
 // example: paste to app.ts
 // import { upload, uploadMultipleImagesMiddleware } from './middleware/upload';
 
@@ -195,7 +201,7 @@ const deleteImage = async (link: string = "") => {
             console.error("Error: Lỗi khi xoá ảnh");
         }
     } else {
-        console.error("không có link khi xoá ảnh hoặc link xoá là link mặc định");
+        console.error("không có link khi xoá ảnh");
     }
     
 }

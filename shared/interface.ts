@@ -17,6 +17,7 @@ export interface IUser extends Document {
 
 // interface RestaurantApplication
 export interface IRestaurantApplication extends Document {
+    _id: Types.ObjectId;
     user_id: Types.ObjectId;
     restaurant_name: string;
     owner_name: string;
@@ -55,19 +56,22 @@ export interface ILocation {
 }
 
 export interface IRestaurant extends Document {
+    _id: Types.ObjectId;
     owner_id: Types.ObjectId;
     name: string;
-    thumbnail?: string;
+    thumbnail: string;
     phone?: string;
     is_active: boolean;
     open_hours: IOpenHours[];
     rating?: number;
     createdAt: Date;
+    updatedAt: Date;
     location: ILocation;
 }
 
 // interface Category
 export interface ICategory extends Document {
+    _id: Types.ObjectId;
     restaurant_id: Types.ObjectId;
     name: string;
     description?: string;
@@ -76,6 +80,7 @@ export interface ICategory extends Document {
 // interface Product
 
 export interface IProduct extends Document {
+    _id: Types.ObjectId;
     restaurant_id: Types.ObjectId;
     name: string;
     description?: string;
@@ -86,7 +91,7 @@ export interface IProduct extends Document {
     final_price: number;
     status: "available" | "unavailable";
     rating?: number;
-    category_id: Types.ObjectId;
+    category_id: Types.ObjectId | ICategory;
 }
 
 // interface Cart
@@ -95,15 +100,20 @@ export interface ICartItem {
     name: string;
     quantity: number;
     price: number;
+    final_price: number;
+    image: string;
 }
 
 export interface ICart extends Document {
+    _id: Types.ObjectId;
     customer_id: Types.ObjectId;
+    restaurant_id: Types.ObjectId | null;
     items: ICartItem[];
 }
 
 // interface Order
 export interface IOrder extends Document {
+    _id: Types.ObjectId;
     customer_id: Types.ObjectId;
     restaurant_id: Types.ObjectId;
     products: {
@@ -122,6 +132,7 @@ export interface IOrder extends Document {
 
 // notification interface
 export interface INotification extends Document {
+    _id: Types.ObjectId;
     user_id: mongoose.Types.ObjectId;
     title: string;
     content: string;
@@ -138,9 +149,3 @@ export interface IErrorResponse {
 }
 
 
-export interface IUploadRequest extends Request {
-    file?: Express.Multer.File;
-    files?: { [fieldname: string]: Express.Multer.File[] };
-    imageUrls?: Record<string, string>;
-    folderName: string;
-}

@@ -8,7 +8,7 @@ import {
     deleteUser,
     logoutUser,
     changePassword,
-    upgradeToRestaurantOwner,
+    changeUserRole,
     addAddress,
     updateAddress,
     deleteAddress
@@ -22,7 +22,7 @@ router.post('/register', createUser);
 router.post('/login', loginUser);
 router.post('/logout', authorize(USER_GROUPS.ALL_USERS), logoutUser);
 
-router.post('/upgrade', authorize(USER_GROUPS.CUSTOMER_ADMIN), upgradeToRestaurantOwner);
+router.post('/change-role', authorize(USER_GROUPS.ADMIN_ONLY), changeUserRole);
 
 // test auth middleware
 router.get('/profile', authorize(USER_GROUPS.ADMIN_ONLY), (req, res) => {
