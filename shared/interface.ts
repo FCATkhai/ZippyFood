@@ -1,5 +1,5 @@
 // @ts-nocheck
-import { Document, Types} from "mongoose";
+import { Document, Types } from "mongoose";
 import { Request } from "express";
 
 // interface User
@@ -63,7 +63,9 @@ export interface IRestaurant extends Document {
     phone?: string;
     is_active: boolean;
     open_hours: IOpenHours[];
-    rating?: number;
+    rating: number;
+    rating_count: number;
+    rating_sum: number;
     createdAt: Date;
     updatedAt: Date;
     location: ILocation;
@@ -90,7 +92,9 @@ export interface IProduct extends Document {
     discount?: number;
     final_price: number;
     status: "available" | "unavailable";
-    rating?: number;
+    rating: number;
+    rating_count: number;
+    rating_sum: number;
     category_id: Types.ObjectId | ICategory;
 }
 
@@ -126,20 +130,35 @@ export interface IOrder extends Document {
     total_price: number;
     address: string;
     note?: string;
-    status: "pending" | "processing" | "ordering" | "completed" | "cancelled";
+    status: "pending" | "processing" | "ordering" | "completed" | "reviewed" | "cancelled";
     order_date: Date;
 }
 
 // notification interface
 export interface INotification extends Document {
     _id: Types.ObjectId;
-    user_id: mongoose.Types.ObjectId;
+    user_id: Types.ObjectId;
     title: string;
-    content: string;
+    content?: string;
     url?: string;
     is_read: boolean;
     createdAt?: Date;
     updatedAt?: Date;
+}
+
+// interface Review
+export interface IReview extends Document {
+    _id: Types.ObjectId;
+    customer_id: Types.ObjectId;
+    product_id: Types.ObjectId;
+    restaurant_id: Types.ObjectId;
+    order_id: Types.ObjectId;
+    restaurant_service_rating: 1 | 2 | 3 | 4 | 5;
+    product_rating: 1 | 2 | 3 | 4 | 5;
+    review_text?: string;
+    image?: string | null;
+    createdAt: Date;
+    updatedAt: Date;
 }
 
 //-------------------------

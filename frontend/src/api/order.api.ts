@@ -93,6 +93,16 @@ export const getOrders = async (
 };
 
 /**
+ * Get an order by ID
+ * @param id Order ID
+ * @returns order
+ */
+export const getOrderById = async (id: string): Promise<IApiResponse<IOrder>> => {
+    const res = await axios.get<IApiResponse<IOrder>>(`${API_URL}/${id}`);
+    return res.data;
+};
+
+/**
  * Update order status
  * @param orderId Order ID
  * @param status New status

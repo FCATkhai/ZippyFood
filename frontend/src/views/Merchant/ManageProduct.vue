@@ -304,8 +304,9 @@
                     </div>
 
                     <div class="modal-action col-span-2">
-                        <button type="button" class="btn" @click="closeProductModal">Hủy</button>
-                        <button type="submit" class="btn btn-primary">
+                        <button type="button" class="btn" @click="closeProductModal" :disabled="loading">Hủy</button>
+                        <button type="submit" class="btn btn-primary" :disabled="loading">
+                            <span v-if="loading" class="loading loading-spinner"></span>
                             {{ editingProductId ? 'Cập nhật' : 'Thêm mới' }}
                         </button>
                     </div>

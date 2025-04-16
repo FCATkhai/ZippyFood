@@ -4,6 +4,7 @@ import {
     getOrdersByUser,
     getOrdersByRestaurant,
     getOrders,
+    getOrderById,
     updateOrderStatus,
 } from "@/api/order.api";
 import type { IOrder } from "~/shared/interface";
@@ -118,6 +119,25 @@ export function useOrder() {
         }
     }
 
+    async function fetchOrderById(id: string) {
+        loading.value = true;
+        error.value = null;
+        try {
+            const response: IApiResponse<IOrder> = await getOrderById(id);
+            if (response.success) {
+                order.value = response.order || null;
+                return response.order;
+            } else {
+                throw new Error(response.message || "Failed to fetch order by id");
+            }
+        } catch (err: any) {
+            error.value = err.message || "Error fetching order by id";
+            order.value = null;
+        } finally {
+            loading.value = false;
+        }
+    }
+
     async function updateStatus(
         orderId: string,
         status: "pending" | "processing" | "ordering" | "completed" | "cancelled"
@@ -169,6 +189,7 @@ export function useOrder() {
         fetchOrdersByUser,
         fetchOrdersByRestaurant,
         fetchOrders,
+        fetchOrderById,
         updateStatus,
         reset,
     };

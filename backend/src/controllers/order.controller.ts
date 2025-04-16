@@ -2,14 +2,22 @@
 import { Request, Response, NextFunction } from "express";
 import Order from "../models/Order.model";
 import Cart from "../models/Cart.model";
-import User from "../models/User.model"; 
-import Restaurant from "../models/Restaurant.model"; 
-import { ICartItem, IProduct } from "~/shared/interface";
+import User from "../models/User.model";
+import Restaurant from "../models/Restaurant.model";
+import { ICartItem, IOrder, IProduct } from "~/shared/interface";
 import { Types, FilterQuery } from "mongoose";
+import { RestaurantService } from "../services/restaurant.service";
+import NotificationService from "../services/notification.service";
+import OrderService from "../services/order.service";
+import { ORDER_STATUSES, ORDER_STATUS_VALUES, OrderStatus } from "~/shared/constant";
 
 function isIProduct(product: Types.ObjectId | IProduct): product is IProduct {
     return (product as IProduct).restaurant_id !== undefined;
 }
+
+function isOrderStatus(value: unknown): value is OrderStatus {
+    return typeof value === 'string' && ORDER_STATUS_VALUES.includes(value as OrderStatus);
+  }
 /**
  * Tạo đơn hàng từ giỏ hàng
  * @route POST /api/orders
@@ -53,7 +61,7 @@ export const createOrder = async (req: Request, res: Response, next: NextFunctio
                 final_price: item.final_price,
                 image: item.product_id.image,
                 subtotal: item.quantity * item.final_price,
-                category_id: item.product_id.category_id, 
+                category_id: item.product_id.category_id,
             };
         });
 
@@ -72,6 +80,15 @@ export const createOrder = async (req: Request, res: Response, next: NextFunctio
         });
 
         await order.save();
+
+        const ownerId = await RestaurantService.getOwnerIdByRestaurantId(restaurant_id.toString());
+        if (ownerId) {
+            await NotificationService.createNotification({
+                user_id: ownerId,
+                title: `Có đơn hàng mới từ ${req.user?.name}`,
+                url: `/restaurant-manage/orders`,
+            })
+        }
         await Cart.findOneAndDelete({ customer_id });
 
         res.status(201).json({ success: true, message: "Order placed successfully", order });
@@ -98,8 +115,8 @@ export const getOrdersByUser = async (req: Request, res: Response, next: NextFun
         page = Number(page);
         limit = Number(limit);
 
-        const query: FilterQuery<unknown> = { customer_id };
-        if (status && ["pending", "processing", "ordering", "completed", "cancelled"].includes(status as string)) {
+        const query: FilterQuery<IOrder> = { customer_id };
+        if (status && isOrderStatus(status)) {
             query.status = status;
         }
 
@@ -144,8 +161,8 @@ export const getOrdersByRestaurant = async (req: Request, res: Response, next: N
         page = Number(page);
         limit = Number(limit);
 
-        const query: FilterQuery<unknown> = { restaurant_id };
-        if (status && ["pending", "processing", "ordering", "completed", "cancelled"].includes(status as string)) {
+        const query: FilterQuery<IOrder> = { restaurant_id };
+        if (status && isOrderStatus(status)) {
             query.status = status;
         }
 
@@ -184,15 +201,15 @@ export const getOrders = async (req: Request, res: Response, next: NextFunction)
         page = Number(page);
         limit = Number(limit);
 
-        const query: FilterQuery<unknown> = {};
-        if (status && ["pending", "processing", "ordering", "completed", "cancelled"].includes(status as string)) {
+        const query: FilterQuery<IOrder> = {};
+        if (status && isOrderStatus(status)) {
             query.status = status;
         }
 
         if (search) {
             // Check if search is a valid MongoDB ObjectId
             const isValidObjectId = Types.ObjectId.isValid(search as string);
-            
+
             const restaurants = await Restaurant.find({
                 name: { $regex: search, $options: "i" }
             }).select("_id");
@@ -243,6 +260,35 @@ export const getOrders = async (req: Request, res: Response, next: NextFunction)
 };
 
 /**
+ * Lấy đơn hàng theo ID
+ * @route GET /api/orders/:id
+ * @access all users
+ */
+export const getOrderById = async (req: Request, res: Response, next: NextFunction) => {
+    try {
+        const { id } = req.params;
+        if (!id || !Types.ObjectId.isValid(id)) {
+            res.status(400);
+            throw new Error("Invalid order ID");
+        }
+
+        const order = await Order.findById(id)
+            .populate("customer_id", "name phone")
+            .populate("restaurant_id", "name");
+
+        if (!order) {
+            res.status(404);
+            throw new Error("Order not found");
+        }
+
+        res.json({ success: true, order });
+    } catch (error) {
+        next(error);
+    }
+};
+
+
+/**
  * Cập nhật trạng thái đơn hàng
  * @route PATCH /api/orders/:id
  * @access owner_admin
@@ -251,23 +297,48 @@ export const updateOrderStatus = async (req: Request, res: Response, next: NextF
     try {
         const { id } = req.params;
         const { status } = req.body;
+        const userId = req.user?._id;
+        const userRole = req.user?.role;
 
+        // Validate ObjectId
         if (!Types.ObjectId.isValid(id)) {
             res.status(400);
-            throw new Error("Invalid order ID");
+            throw new Error('Invalid order ID');
         }
 
-        if (!["pending", "processing", "ordering", "completed", "cancelled"].includes(status)) {
+        // Validate user
+        if (!userId || !userRole) {
+            res.status(401);
+            throw new Error('unauthorized');
+        }
+
+        // Validate status
+        if (!ORDER_STATUS_VALUES.includes(status)) {
             res.status(400);
-            throw new Error("Invalid status value");
+            throw new Error('invalid status value');
         }
 
-        const order = await Order.findByIdAndUpdate(id, { status }, { new: true })
-            .populate("customer_id", "name phone")
-            .populate("restaurant_id", "name");
-        if (!order) {
-            res.status(404);
-            throw new Error("Order not found");
+        // Call service
+        const order = await OrderService.updateOrderStatus(
+            new Types.ObjectId(id),
+            status,
+            userId,
+            userRole
+        );
+
+        // Create notifications for specific statuses
+        if (status === ORDER_STATUSES.ORDERING) {
+            await NotificationService.createNotification({
+                user_id: order.customer_id,
+                title: `Đơn hàng ${order._id} đang được giao, đợi chút nhé!`,
+                url: `/order-history`,
+            });
+        } else if (status === ORDER_STATUSES.COMPLETED) {
+            await NotificationService.createNotification({
+                user_id: order.customer_id,
+                title: `Đơn hàng ${order._id} đã hoàn thành`,
+                url: `/order-history`,
+            });
         }
 
         res.json({ success: true, message: "Order status updated", order });

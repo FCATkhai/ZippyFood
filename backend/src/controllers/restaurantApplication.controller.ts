@@ -7,6 +7,7 @@ import { FilterQuery, SortOrder } from "mongoose";
 import { deleteImage } from "../middleware/upload";
 import User from "../models/User.model";
 import Product from "../models/Product.model";
+import { NotificationService } from "../services/notification.service";
 
 /**
  * Gửi đơn đăng ký nhà hàng
@@ -234,6 +235,13 @@ export const updateApplicationStatus = async (req: Request, res: Response, next:
             });
 
             await newRestaurant.save();
+
+            await NotificationService.createNotification({
+                user_id: application.user_id,
+                title: "Đơn đăng ký nhà hàng đã được duyệt",
+                content: `Đơn đăng ký nhà hàng "${application.restaurant_name}" của bạn đã được duyệt.`,
+                url: `/restaurant-manage/restaurant-complete`,
+            });
         }
 
         res.json({ success: true, message: "Application status updated", application });

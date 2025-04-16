@@ -1,5 +1,7 @@
 import mongoose, {Schema, Model} from 'mongoose';
+import { ORDER_STATUS_VALUES, ORDER_STATUSES } from '~/shared/constant';
 import { IOrder } from '~/shared/interface';
+
 const OrderSchema: Schema = new Schema({
     customer_id: { type: Schema.Types.ObjectId, ref: "User", required: true },
     restaurant_id: { type: Schema.Types.ObjectId, ref: "Restaurant", required: true },
@@ -15,7 +17,7 @@ const OrderSchema: Schema = new Schema({
     total_price: { type: Number, required: true },
     address: { type: String, required: true },
     note: { type: String },
-    status: { type: String, enum: ["pending", "processing", "ordering", "completed", "cancelled"], default: "pending" },
+    status: { type: String, enum: ORDER_STATUS_VALUES, default: ORDER_STATUSES.PENDING},
     order_date: { type: Date, default: Date.now },
 }, { timestamps: true });
 

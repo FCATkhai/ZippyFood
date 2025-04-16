@@ -21,8 +21,8 @@
 
                     <li><RouterLink to="/restaurant-manage" class="block py-2"><i class="fa-solid fa-chart-simple"></i> Dashboard </RouterLink></li>
                     <li><RouterLink to="/restaurant-manage/setting" class="block py-2"><i class="fa-solid fa-store"></i> Quản lý Nhà Hàng</RouterLink></li>
-                    <li><RouterLink to="/restaurant-manage/product" class="block py-2"><i class="fa-solid fa-utensils"></i> Quản lý Món Ăn</RouterLink></li>
-                    <li><RouterLink to="/restaurant-manage/order" class="block py-2"><i class="fa-solid fa-receipt"></i> Quản lý Đơn Hàng</RouterLink></li>
+                    <li><RouterLink to="/restaurant-manage/products" class="block py-2"><i class="fa-solid fa-utensils"></i> Quản lý Món Ăn</RouterLink></li>
+                    <li><RouterLink to="/restaurant-manage/orders" class="block py-2"><i class="fa-solid fa-receipt"></i> Quản lý Đơn Hàng</RouterLink></li>
                 </ul>
             </div>
         </div>

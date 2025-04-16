@@ -43,23 +43,27 @@
             <li>
                 <RouterLink to="/contact">Liên hệ</RouterLink>
             </li>
+
             <li v-if="role === USER_ROLES.ADMIN">
                 <RouterLink to="/admin">Quản lý</RouterLink>
             </li>
             <li v-if="role === USER_ROLES.RESTAURANT_OWNER">
                 <RouterLink to="/restaurant-manage">Quản lý</RouterLink>
             </li>
-
+            <!-- Notification icon -->
+            <template v-if="authStore.isAuthenticated">
+                <NotificationIcon />
+            </template>
             <template v-if="authStore.isAuthenticated">
                 <CardIcon />
 
                 <div class="dropdown dropdown-end">
-                    <div tabindex="1" role="button" class="btn btn-ghost btn-circle avatar">
+                    <div tabindex="2" role="button" class="btn btn-ghost btn-circle avatar">
                         <div class="w-10 rounded-full align-middle">
                             <i class="fa-solid fa-user text-2xl pt-2"></i>
                         </div>
                     </div>
-                    <ul tabindex="1"
+                    <ul tabindex="2"
                         class="menu menu-md dropdown-content bg-base-100 rounded-box z-1 mt-3 w-52 p-2 shadow">
                         <!-- <li class="mb-2">
                             <RouterLink :to="profileLink">Hồ sơ</RouterLink>
@@ -82,11 +86,12 @@
 </template>
 
 <script setup lang="ts">
-import { computed } from 'vue';
+import { computed, onMounted } from 'vue';
 import { useAuthStore } from '@/stores/auth.store';
 import { useRouter, useRoute, RouterLink } from 'vue-router';
 import { USER_ROLES } from '~/shared/userRoles';
 import CardIcon from './CardIcon.vue';
+import NotificationIcon from './NotificationIcon.vue';
 
 const authStore = useAuthStore();
 
@@ -101,10 +106,14 @@ const route = useRoute();
 // });
 
 const user = computed(() => authStore.user);
+
 const role = computed(() => user.value?.role);
+
 const handleLogout = async () => {
     await authStore.logout();
 }
+
+
 
 </script>
 

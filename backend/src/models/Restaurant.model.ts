@@ -22,6 +22,8 @@ const RestaurantSchema: Schema = new Schema({
         }] /* thời gian hoạt động theo khung giờ */
     }],
     rating: {type: Number, default: 0},
+    rating_count: { type: Number, default: 0 }, // Number of reviews
+    rating_sum: { type: Number, default: 0 }, // Sum of restaurant_service_rating
     location: {
         address: {
             type: String

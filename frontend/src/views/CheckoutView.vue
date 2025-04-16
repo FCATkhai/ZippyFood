@@ -140,12 +140,16 @@ import { useOrder } from "@/composables/useOrder";
 import { useAddress } from "@/composables/useAddress";
 import { useCartStore } from "@/stores/cart.store";
 import { useAuthStore } from "@/stores/auth.store";
+import { useNotification } from "@/composables/useNotification";
 
 const toast = useToast();
 const order = useOrder();
 const address = useAddress();
 const cartStore = useCartStore();
 const authStore = useAuthStore();
+const notification = useNotification();
+
+const cart = computed(() => cartStore.cart);
 
 const selectedAddress = ref("");
 const note = ref("");

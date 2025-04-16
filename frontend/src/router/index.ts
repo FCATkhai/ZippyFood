@@ -94,6 +94,15 @@ const routes = [
         }
     },
     {
+        path: '/review-order/:id',
+        name: 'review-order',
+        component: () => import('@/views/ReviewOrderView.vue'),
+        meta: {
+            layout: AppLayout,
+            requireAuth: true
+        }
+    },
+    {
         path: '/restaurant-register',
         name: 'register-restaurant',
         component: () => import('@/views/Restaurant/RegisterRestaurantApplication.vue'),
@@ -118,8 +127,8 @@ const routes = [
         children: [
             { path: "", name: "dashboard-merchant", component: () => import("@/views/Merchant/Dashboard.vue") },
             { path: "setting", name: "restaurant-setting", component: () => import("@/views/Merchant/ManageRestaurant_Merchant.vue") },
-            { path: "product", name: "product-merchant", component: () => import("@/views/Merchant/ManageProduct.vue") },
-            { path: "order", name: "order-merchant", component: () => import("@/views/Merchant/ManageOrder_Merchant.vue") },
+            { path: "products", name: "product-merchant", component: () => import("@/views/Merchant/ManageProduct.vue") },
+            { path: "orders", name: "order-merchant", component: () => import("@/views/Merchant/ManageOrder_Merchant.vue") },
         ],
     },
     {

@@ -14,6 +14,8 @@ interface IApiResponse<T> {
     limit?: number;
     totalPages?: number;
     hasMore?: boolean;
+    hasUnread?: boolean;
+    unreadCount?: number;
 }
 
 // Base URL for notification endpoints
@@ -55,6 +57,24 @@ export const createNotification = async (data: {
     url?: string;
 }) => {
     const res = await axios.post<IApiResponse<INotification>>(API_URL, data);
+    return res.data;
+};
+
+/**
+ * Kiểm tra xem user có thông báo chưa đọc hay không
+ * @returns Boolean indicating if there are unread notifications
+ */
+export const hasUnreadNotifications = async () => {
+    const res = await axios.get<IApiResponse<INotification>>(`${API_URL}/has-unread`);
+    return res.data;
+};
+
+/**
+ * Đếm số thông báo chưa đọc
+ * @returns Number of unread notifications
+ */
+export const countUnreadNotifications = async () => {
+    const res = await axios.get<IApiResponse<INotification>>(`${API_URL}/count-unread`);
     return res.data;
 };
 

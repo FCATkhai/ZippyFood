@@ -94,6 +94,56 @@ export const createNotification = async (req: Request, res: Response, next: Next
 };
 
 /**
+ * Kiểm tra xem user có thông báo chưa đọc hay không
+ * @route GET /api/notifications/has-unread
+ * @access Private (Chỉ user đăng nhập)
+ */
+export const hasUnreadNotifications = async (req: Request, res: Response, next: NextFunction) => {
+    try {
+        const userId = req.user?._id;
+        if (!userId) {
+            res.status(401);
+            throw new Error("Unauthorized");
+        }
+
+        // Check if there are any unread notifications
+        const hasUnread = await Notification.exists({ user_id: userId, is_read: false });
+
+        res.json({
+            success: true,
+            hasUnread: !!hasUnread, // Convert to boolean (null if none exist)
+        });
+    } catch (error) {
+        next(error);
+    }
+};
+
+/**
+ * Đếm số thông báo chưa đọc của user
+ * @route GET /api/notifications/count-unread
+ * @access Private (Chỉ user đăng nhập)
+ */
+export const countUnreadNotifications = async (req: Request, res: Response, next: NextFunction) => {
+    try {
+        const userId = req.user?._id;
+        if (!userId) {
+            res.status(401);
+            throw new Error("Unauthorized");
+        }
+
+        // Count unread notifications
+        const unreadCount = await Notification.countDocuments({ user_id: userId, is_read: false });
+
+        res.json({
+            success: true,
+            unreadCount,
+        });
+    } catch (error) {
+        next(error);
+    }
+};
+
+/**
  * Đánh dấu thông báo đã đọc
  * @route PATCH /api/notifications/:id/read
  * @access Private (Chỉ user sở hữu thông báo)

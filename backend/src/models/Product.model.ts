@@ -33,6 +33,8 @@ const ProductSchema: Schema = new Schema({
     rating: {
         type: Number, default: 0
     },
+    rating_count: { type: Number, default: 0 }, // Number of reviews
+    rating_sum: { type: Number, default: 0 }, // Sum of product_rating
     category_id: {
         type: Schema.Types.ObjectId, ref: "Category", required: true
     }

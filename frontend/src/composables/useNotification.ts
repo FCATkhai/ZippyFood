@@ -1,8 +1,10 @@
 // useNotification.ts
-import { ref, computed } from "vue";
+import { ref, computed, onUnmounted } from "vue";
 import {
     getNotifications,
     createNotification,
+    hasUnreadNotifications,
+    countUnreadNotifications,
     markAsRead,
     markAsReadAll,
     deleteNotification,
@@ -20,6 +22,8 @@ interface IApiResponse<T> {
     limit?: number;
     totalPages?: number;
     hasMore?: boolean;
+    hasUnread?: boolean;
+    unreadCount?: number;
 }
 
 export function useNotification() {
@@ -32,6 +36,10 @@ export function useNotification() {
     const hasMore = ref<boolean>(false);
     const loading = ref<boolean>(false);
     const error = ref<string | null>(null);
+    const hasUnread = ref<boolean>(false);
+    const unreadCount = ref<number>(0);
+
+    let pollingInterval: number | null = null;
 
     /**
      * Fetch notifications with pagination and optional is_read filter
@@ -89,6 +97,50 @@ export function useNotification() {
             loading.value = false;
         }
     }
+
+/**
+     * Check if the user has any unread notifications
+     */
+async function checkHasUnread() {
+    loading.value = true;
+    error.value = null;
+    try {
+        const response: IApiResponse<INotification> = await hasUnreadNotifications();
+        if (response.success) {
+            hasUnread.value = response.hasUnread || false;
+        } else {
+            throw new Error(response.message || "Failed to check unread notifications");
+        }
+    } catch (err: any) {
+        error.value = err.message || "Error checking unread notifications";
+        hasUnread.value = false; // Default to false on error
+    } finally {
+        loading.value = false;
+    }
+}
+
+/**
+     * Count the number of unread notifications
+     */
+async function countUnread() {
+    loading.value = true;
+    error.value = null;
+    try {
+        const response: IApiResponse<INotification> = await countUnreadNotifications();
+        if (response.success) {
+            unreadCount.value = response.unreadCount || 0;
+            hasUnread.value = (response.unreadCount || 0) > 0; // Update hasUnread as well
+        } else {
+            throw new Error(response.message || "Failed to count unread notifications");
+        }
+    } catch (err: any) {
+        error.value = err.message || "Error counting unread notifications";
+        unreadCount.value = 0;
+        hasUnread.value = false;
+    } finally {
+        loading.value = false;
+    }
+}
 
     /**
      * Mark a notification as read
@@ -171,6 +223,27 @@ export function useNotification() {
     }
 
     /**
+     * Start polling for unread notifications every 30 seconds
+     */
+    function startPolling() {
+        if (pollingInterval) return; // Prevent multiple intervals
+        pollingInterval = setInterval(() => {
+            countUnread(); // Poll unread count
+            // fetchNotifications(page.value, limit.value) Optionally call to refresh the list
+        }, 30 * 1000); // 30 seconds in milliseconds
+    }
+
+    /**
+     * Stop polling
+     */
+    function stopPolling() {
+        if (pollingInterval) {
+            clearInterval(pollingInterval);
+            pollingInterval = null;
+        }
+    }
+
+    /**
      * Reset all reactive state
      */
     function reset() {
@@ -183,7 +256,15 @@ export function useNotification() {
         hasMore.value = false;
         loading.value = false;
         error.value = null;
+        hasUnread.value = false;
+        unreadCount.value = 0;
+        stopPolling(); // Stop polling on reset
     }
+
+    // Automatically stop polling when the composable is unmounted
+    onUnmounted(() => {
+        stopPolling();
+    });
 
     return {
         notifications: computed(() => notifications.value),
@@ -195,11 +276,17 @@ export function useNotification() {
         hasMore: computed(() => hasMore.value),
         loading: computed(() => loading.value),
         error: computed(() => error.value),
+        hasUnread: computed(() => hasUnread.value),
+        unreadCount: computed(() => unreadCount.value),
         fetchNotifications,
         create,
         markNotificationAsRead,
+        checkHasUnread,
+        countUnread,
         markAllAsRead,
         deleteNotificationById,
         reset,
+        startPolling,
+        stopPolling,
     };
 }

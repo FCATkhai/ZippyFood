@@ -168,7 +168,7 @@ const submitChanges = async () => {
         <!-- Thumbnail Display -->
         <div class="mb-6 text-center">
             <img v-if="thumbnailPreview" :src="thumbnailPreview" alt="Restaurant Thumbnail"
-                class="w-64 h-64 object-cover rounded-lg mx-auto border" />
+                class="w-200 object-cover rounded-lg mx-auto border" />
             <p v-else class="text-gray-500">Chưa có ảnh thumbnail</p>
         </div>
 
