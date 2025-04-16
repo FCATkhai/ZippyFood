@@ -1,3 +1,17 @@
+export const RESTAURANT_STATUSES = {
+    CLOSING: 'closing',
+    OPENING: 'opening',
+    SUSPENDED: 'suspended',
+} as const;
+
+export const RESTAURANT_STATUS_VALUES = [
+    RESTAURANT_STATUSES.CLOSING,
+    RESTAURANT_STATUSES.OPENING,
+    RESTAURANT_STATUSES.SUSPENDED
+] as const;
+
+export type RestaurantStatus = typeof RESTAURANT_STATUSES[keyof typeof RESTAURANT_STATUSES];
+
 export const ORDER_STATUSES = {
     PENDING: 'pending',
     PROCESSING: 'processing',

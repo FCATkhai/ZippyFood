@@ -1,7 +1,7 @@
 // @ts-nocheck
 import { Document, Types } from "mongoose";
 import { Request } from "express";
-
+import {RestaurantStatus} from "./constant";
 // interface User
 export interface IUser extends Document {
     _id: Types.ObjectId;
@@ -61,7 +61,7 @@ export interface IRestaurant extends Document {
     name: string;
     thumbnail: string;
     phone?: string;
-    is_active: boolean;
+    status: RestaurantStatus; // before was: is_active: boolean
     open_hours: IOpenHours[];
     rating: number;
     rating_count: number;

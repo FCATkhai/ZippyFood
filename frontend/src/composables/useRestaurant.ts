@@ -9,6 +9,7 @@ import {
     deleteRestaurant,
 } from "@/api/restaurant.api";
 import type { IRestaurant } from "~/shared/interface";
+import type { RestaurantStatus } from "~/shared/constant";
 
 export function useRestaurant() {
     const restaurants = ref<IRestaurant[]>([]);
@@ -19,7 +20,7 @@ export function useRestaurant() {
     const hasMore = ref(true);
     const loading = ref(false);
     const searchTerm = ref("");
-    const isActiveFilter = ref<string>("");
+    const statusFilter = ref<RestaurantStatus | "">("");
     const minRatingFilter = ref<number>(0);
     const sortBy = ref<"createdAt" | "rating">("createdAt");
     const sortOrder = ref<"asc" | "desc">("desc");
@@ -41,7 +42,7 @@ export function useRestaurant() {
                 page: page.value,
                 limit: limit.value,
                 search: searchTerm.value,
-                is_active: isActiveFilter.value,
+                status: statusFilter.value,
                 min_rating: minRatingFilter.value,
                 sort_by: sortBy.value,
                 sort: sortOrder.value,
@@ -101,7 +102,7 @@ export function useRestaurant() {
             location?: any;
             open_hours?: any[];
             file?: File;
-            is_active?: boolean;
+            status?: string;
         }
     ) => {
         loading.value = true;
@@ -133,7 +134,7 @@ export function useRestaurant() {
     };
 
     // Watch for filter changes with debounce
-    watch([searchTerm, isActiveFilter, minRatingFilter, sortBy, sortOrder], () => {
+    watch([searchTerm, statusFilter, minRatingFilter, sortBy, sortOrder], () => {
         if (searchTimeout) clearTimeout(searchTimeout);
         searchTimeout = setTimeout(() => {
             fetchRestaurants(true);
@@ -154,7 +155,7 @@ export function useRestaurant() {
         hasMore,
         loading,
         searchTerm,
-        isActiveFilter,
+        statusFilter,
         minRatingFilter,
         sortBy,
         sortOrder,

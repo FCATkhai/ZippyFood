@@ -22,7 +22,7 @@ interface IRestaurantListParams {
     page?: number;
     limit?: number;
     search?: string;
-    is_active?: string;
+    status?: string;
     min_rating?: number;
     sort_by?: "createdAt" | "rating";
     sort?: "asc" | "desc";
@@ -43,7 +43,7 @@ interface IUpdateRestaurantData {
     phone?: string;
     location?: any;
     open_hours?: any[];
-    is_active?: boolean;
+    status?: string;
     file?: File; // For thumbnail update
 }
 
@@ -113,7 +113,7 @@ export const updateRestaurant = async (id: string, data: IUpdateRestaurantData) 
     if (data.location) formData.append("location", JSON.stringify(data.location));
     if (data.open_hours) formData.append("open_hours", JSON.stringify(data.open_hours));
     if (data.file) formData.append("file", data.file);
-    if (data.is_active !== undefined) formData.append("is_active", data.is_active.toString());
+    if (data.status) formData.append("status", data.status);
 
     const res = await axios.patch<IApiResponse<IRestaurant>>(`${API_URL}/${id}`, formData, {
         headers: {

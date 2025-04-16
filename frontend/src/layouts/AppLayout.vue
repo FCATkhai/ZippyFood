@@ -1,6 +1,6 @@
 <template>
     <Navbar />
-    <RouterView />
+    <RouterView class="min-h-screen" />
     <Footer />
 </template>
 

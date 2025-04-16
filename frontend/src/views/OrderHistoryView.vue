@@ -248,6 +248,7 @@ import { useToast } from 'vue-toastification';
 import { useRouter } from 'vue-router';
 
 import { useAuthStore } from '@/stores/auth.store';
+import {ORDER_STATUSES} from '~/shared/constant';
 
 const authStore = useAuthStore();
 const customerId = computed(() => authStore.user?._id);
@@ -289,11 +290,12 @@ const cancelOrderId = ref(null);
 // Status tabs
 const statusTabs = [
     { label: 'Tất cả', value: '', icon: 'fas fa-list' },
-    { label: 'Chờ xác nhận', value: 'pending', icon: 'fas fa-clock' },
-    { label: 'Đang xử lý', value: 'processing', icon: 'fas fa-spinner' },
-    { label: 'Đang giao', value: 'ordering', icon: 'fas fa-truck' },
-    { label: 'Hoàn thành', value: 'completed', icon: 'fas fa-check-circle' },
-    { label: 'Đã hủy', value: 'cancelled', icon: 'fas fa-times-circle' }
+    { label: 'Chờ xác nhận', value: ORDER_STATUSES.PENDING, icon: 'fas fa-clock' },
+    { label: 'Đang xử lý', value: ORDER_STATUSES.PROCESSING, icon: 'fas fa-spinner' },
+    { label: 'Đang giao', value: ORDER_STATUSES.ORDERING, icon: 'fas fa-truck' },
+    { label: 'Hoàn thành', value: ORDER_STATUSES.COMPLETED, icon: 'fas fa-check-circle' },
+    { label: 'Đã đánh giá', value: ORDER_STATUSES.REVIEWED, icon: 'fas fa-star' },
+    { label: 'Đã hủy', value: ORDER_STATUSES.CANCELLED, icon: 'fas fa-times-circle' },
 ];
 
 // Lifecycle hooks
@@ -359,7 +361,7 @@ function cancelCancelAction() {
 
 async function processCancelOrder() {
     try {
-        await updateStatus(cancelOrderId.value, 'cancelled');
+        await updateStatus(cancelOrderId.value, ORDER_STATUSES.CANCELLED);
         toast.success('Đã hủy đơn hàng thành công');
         showCancelModal.value = false;
         cancelOrderId.value = null;
@@ -415,7 +417,8 @@ function translateStatus(status) {
         'processing': 'Đang xử lý',
         'ordering': 'Đang giao hàng',
         'completed': 'Hoàn thành',
-        'cancelled': 'Đã hủy'
+        'reviewed': 'Đã đánh giá',
+        'cancelled': 'Đã hủy',
     };
     return statusMap[status] || status;
 }
@@ -430,7 +433,8 @@ function getStatusBadgeClass(status) {
         'processing': 'badge badge-info',
         'ordering': 'badge badge-primary',
         'completed': 'badge badge-success',
-        'cancelled': 'badge badge-error'
+        'reviewed': 'badge badge-accent',
+        'cancelled': 'badge badge-error',
     };
     return classMap[status] || 'badge';
 }

@@ -5,6 +5,7 @@ import { useRestaurant } from "@/composables/useRestaurant";
 import { useAuthStore } from "@/stores/auth.store";
 import { useToast } from "vue-toastification";
 import type { IRestaurant, IOpenHours, ITimeSlot } from "~/shared/interface";
+import { RESTAURANT_STATUSES, type RestaurantStatus } from "~/shared/constant";
 
 const restaurantStore = useRestaurantStore();
 const authStore = useAuthStore();
@@ -32,7 +33,7 @@ const togglingActive = ref(false); // Separate loading state for toggle
 
 // Computed properties
 const restaurantId = computed(() => restaurantStore.restaurant?._id);
-const isActive = computed(() => restaurantStore.restaurant?.is_active || false);
+const restaurantStatus = computed(() => restaurantStore.restaurant?.status);
 
 // Initialize data
 const loadRestaurantData = async () => {
@@ -77,14 +78,19 @@ const toggleActive = async () => {
 
     togglingActive.value = true;
     try {
-        const newActiveState = !isActive.value;
-        const updatedData = { is_active: newActiveState };
+        let newActiveState = "";
+        if (restaurantStatus.value === RESTAURANT_STATUSES.CLOSING) {
+            newActiveState = RESTAURANT_STATUSES.OPENING
+        } else {
+            newActiveState = RESTAURANT_STATUSES.CLOSING
+        }
+        const updatedData = { status: newActiveState };
         const response = await updateExistingRestaurant(restaurantId.value, updatedData);
 
         if (response) {
             restaurantStore.restaurant = {
                 ...restaurantStore.restaurant!,
-                is_active: newActiveState,
+                status: newActiveState as RestaurantStatus,
             };
             toast.success(newActiveState ? "Đã kích hoạt nhà hàng" : "Đã vô hiệu hóa nhà hàng");
         }
@@ -134,7 +140,7 @@ const submitChanges = async () => {
                 coordinates: restaurantStore.restaurant?.location?.coordinates || { lat: 0, lng: 0 },
             },
             open_hours: openHours.value,
-            is_active: isActive.value, // Preserve current is_active
+            status: restaurantStatus.value, // Preserve current status
         };
 
         if (thumbnail.value) {
@@ -176,10 +182,10 @@ const submitChanges = async () => {
 
         <!-- Edit and Toggle Buttons -->
         <div class="mb-4 flex justify-between">
-            <button @click="toggleActive" :class="isActive ? 'btn btn-warning' : 'btn btn-success'"
+            <button @click="toggleActive" :class="restaurantStatus === RESTAURANT_STATUSES.CLOSING ? 'btn btn-warning' : 'btn btn-success'"
                 :disabled="togglingActive || loading">
                 <span v-if="togglingActive" class="loading loading-spinner"></span>
-                {{ togglingActive ? "Đang xử lý..." : isActive ? "Vô hiệu hóa" : "Kích hoạt" }}
+                {{ togglingActive ? "Đang xử lý..." : restaurantStatus === RESTAURANT_STATUSES.CLOSING ? "Đóng cửa hàng" : "Mở cửa hàng" }}
             </button>
             <button @click="toggleEdit" class="btn btn-primary" :disabled="loading || togglingActive">
                 {{ isEditing ? "Hủy" : "Chỉnh sửa" }}

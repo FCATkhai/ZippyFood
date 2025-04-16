@@ -7,6 +7,7 @@ import { deleteImage } from "../middleware/upload";
 import { FilterQuery } from "mongoose";
 import Product from "../models/Product.model";
 import { IRestaurant } from "~/shared/interface";
+import { RESTAURANT_STATUS_VALUES, RESTAURANT_STATUSES, RestaurantStatus } from "~/shared/constant";
 
 /**
  * Tạo nhà hàng
@@ -51,11 +52,11 @@ export const getRestaurants = async (req: Request, res: Response, next: NextFunc
             page = 1,
             limit = 10,
             search = "",
-            is_active = "",
+            status = "", // Changed from is_active to status
             min_rating = 0,
             sort_by = "createdAt", // Default sort by createdAt
             sort = "desc", // Default sort descending
-            check_open = "false" //check if restaurant is open now
+            check_open = "false" // Check if restaurant is open now
         } = req.query;
 
         // Convert query params to appropriate types
@@ -75,9 +76,16 @@ export const getRestaurants = async (req: Request, res: Response, next: NextFunc
             ];
         }
 
-        // Filter by is_active
-        if (is_active === "true" || is_active === "false") {
-            query.is_active = is_active === "true";
+        // Filter by status
+        if (status) {
+            // Validate status value
+            const validStatuses = Object.values(RESTAURANT_STATUSES);
+            if (validStatuses.includes(status as RestaurantStatus)) {
+                query.status = status;
+            } else {
+                res.status(400);
+                throw new Error("Invalid status value");
+            }
         }
 
         // Filter by minimum rating
@@ -199,7 +207,7 @@ export const updateRestaurant = async (req: Request, res: Response, next: NextFu
         const oldName = restaurant.name;
         const oldAddress = restaurant.location?.address;
 
-        const { name, phone, location, open_hours, is_active } = req.body;
+        const { name, phone, location, open_hours, status } = req.body;
 
         if (req.file?.path) {
             // Xóa ảnh cũ trên Cloudinary
@@ -211,8 +219,16 @@ export const updateRestaurant = async (req: Request, res: Response, next: NextFu
         restaurant.phone = phone || restaurant.phone;
         restaurant.location = location ? JSON.parse(location) : restaurant.location;
         restaurant.open_hours = open_hours ? JSON.parse(open_hours) : restaurant.open_hours;
-        restaurant.is_active = is_active ? JSON.parse(is_active) : restaurant.is_active;
-
+        
+        // Validate and update status
+        if (status) {
+            if (RESTAURANT_STATUS_VALUES.includes(status)) {
+                restaurant.status = status;
+            } else {
+                res.status(400);
+                throw new Error("Invalid status value");
+            }
+        }
 
         await restaurant.save();
 

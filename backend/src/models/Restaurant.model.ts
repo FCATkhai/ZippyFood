@@ -1,5 +1,6 @@
 import mongoose, {Schema, Model} from 'mongoose';
 import { IRestaurant } from '~/shared/interface';
+import { RESTAURANT_STATUS_VALUES, RESTAURANT_STATUSES} from '~/shared/constant';
 
 const RestaurantSchema: Schema = new Schema({
     // 1 chủ nhà hàng chỉ có 1 hàng hàng -> owner_id unique
@@ -7,7 +8,7 @@ const RestaurantSchema: Schema = new Schema({
     name: {type: String, required: true, unique: true},
     thumbnail: {type: String, require: true},
     phone: {type: String},
-    is_active: {type: Boolean, default: false} /* trạng thái hoạt động của nhà hàng */,
+    status: {type: String, enum: RESTAURANT_STATUS_VALUES,  default: RESTAURANT_STATUSES.CLOSING}, /* trạng thái hoạt động của nhà hàng */
     open_hours: [{
         day: {
             type: String

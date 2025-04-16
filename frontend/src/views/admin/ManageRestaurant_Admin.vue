@@ -3,6 +3,7 @@ import { ref, onMounted, useTemplateRef } from "vue";
 import { useRestaurant } from "@/composables/useRestaurant";
 import { useToast } from "vue-toastification";
 import type { IRestaurant } from "~/shared/interface";
+import { RESTAURANT_STATUSES, type RestaurantStatus } from "~/shared/constant";
 
 const {
     restaurants,
@@ -11,7 +12,7 @@ const {
     hasMore,
     loading,
     searchTerm,
-    isActiveFilter,
+    statusFilter,
     minRatingFilter,
     sortBy,
     sortOrder,
@@ -45,13 +46,21 @@ const showDeleteModal = (id: string) => {
 };
 
 // Restaurant actions
-const handleUpdateStatus = async (restaurant: IRestaurant, is_active: boolean) => {
+const handleUpdateStatus = async (restaurant: IRestaurant) => {
     try {
+        const currentStatus = restaurant.status;
         const restaurantId = restaurant._id;
-        await updateExistingRestaurant(restaurantId, { is_active });
-        toast.success(is_active ? "Đã kích hoạt nhà hàng" : "Đã vô hiệu hóa nhà hàng");
+        let updateStatus = "";
+        if (currentStatus !== RESTAURANT_STATUSES.SUSPENDED) {
+            updateStatus = RESTAURANT_STATUSES.SUSPENDED;
+        } else {
+            updateStatus = RESTAURANT_STATUSES.CLOSING;
+        }
+
+        await updateExistingRestaurant(restaurantId, { status: updateStatus });
+        toast.success(updateStatus !== RESTAURANT_STATUSES.SUSPENDED ? "Đã mở khoá nhà hàng" : "Đã khoá nhà hàng");
         if (selectedRestaurant.value && selectedRestaurant.value._id === restaurantId) {
-            selectedRestaurant.value.is_active = is_active;
+            selectedRestaurant.value.status = updateStatus as RestaurantStatus;
         }
     } catch (error: any) {
         toast.error(error.response?.data?.message || "Lỗi khi cập nhật trạng thái");
@@ -96,10 +105,11 @@ const prevPage = () => {
             </button>
             <input v-model="searchTerm" placeholder="Tìm kiếm theo tên hoặc số điện thoại..."
                 class="input input-bordered w-1/3" />
-            <select v-model="isActiveFilter" class="select select-bordered">
+            <select v-model="statusFilter" class="select select-bordered">
                 <option value="">Tất cả trạng thái</option>
-                <option value="true">Đang hoạt động</option>
-                <option value="false">Không hoạt động</option>
+                <option :value="RESTAURANT_STATUSES.OPENING">Đang hoạt động</option>
+                <option :value="RESTAURANT_STATUSES.CLOSING">Không hoạt động</option>
+                <option :value="RESTAURANT_STATUSES.SUSPENDED">Bị khoá</option>
             </select>
             <input v-model.number="minRatingFilter" type="number" min="0" max="5"
                 placeholder="Điểm đánh giá tối thiểu" class="input input-bordered w-32" />
@@ -131,15 +141,16 @@ const prevPage = () => {
                     <td>{{ restaurant.rating || 0 }}</td>
                     <td>
                         <span :class="{
-                            'badge badge-success': restaurant.is_active,
-                            'badge badge-error': !restaurant.is_active
+                            'badge badge-success': restaurant.status === RESTAURANT_STATUSES.OPENING,
+                            'badge badge-warning': restaurant.status === RESTAURANT_STATUSES.CLOSING,
+                            'badge badge-error': restaurant.status === RESTAURANT_STATUSES.SUSPENDED,
                         }">
-                            {{ restaurant.is_active ? "Đang hoạt động" : "Không hoạt động" }}
+                            {{ restaurant.status }}
                         </span>
                     </td>
                     <td>
                         <button @click="showDetailsModal(restaurant)" class="btn btn-info btn-sm mr-2">Chi tiết</button>
-                        <button @click="showDeleteModal(restaurant._id)" class="btn btn-error btn-sm">Xóa</button>
+                        <!-- <button @click="showDeleteModal(restaurant._id)" class="btn btn-error btn-sm">Xóa</button> -->
                     </td>
                 </tr>
             </tbody>
@@ -168,10 +179,11 @@ const prevPage = () => {
                     <p><strong>Điểm Đánh Giá:</strong> {{ selectedRestaurant.rating || 0 }}</p>
                     <p><strong>Trạng Thái:</strong>
                         <span :class="{
-                            'badge badge-success': selectedRestaurant.is_active,
-                            'badge badge-error': !selectedRestaurant.is_active
+                            'badge badge-success': selectedRestaurant.status === RESTAURANT_STATUSES.OPENING,
+                            'badge badge-warning': selectedRestaurant.status === RESTAURANT_STATUSES.CLOSING,
+                            'badge badge-error': selectedRestaurant.status === RESTAURANT_STATUSES.SUSPENDED,
                         }">
-                            {{ selectedRestaurant.is_active ? "Đang hoạt động" : "Không hoạt động" }}
+                            {{ selectedRestaurant.status }}
                         </span>
                     </p>
                 </div>
@@ -187,10 +199,10 @@ const prevPage = () => {
             </div>
             <div class="modal-action flex justify-between">
                 <div v-if="selectedRestaurant" class="space-x-2">
-                    <button @click="handleUpdateStatus(selectedRestaurant, !selectedRestaurant.is_active)"
-                        :class="selectedRestaurant.is_active ? 'btn btn-warning' : 'btn btn-success'"
+                    <button @click="handleUpdateStatus(selectedRestaurant)"
+                        :class="selectedRestaurant.status !== RESTAURANT_STATUSES.SUSPENDED ? 'btn btn-error' : 'btn btn-success'"
                         :disabled="loading">
-                        {{ selectedRestaurant.is_active ? "Vô hiệu hóa" : "Kích hoạt" }}
+                        {{ selectedRestaurant.status !== RESTAURANT_STATUSES.SUSPENDED ? "Khoá" : "Mở khoá" }}
                     </button>
                 </div>
                 <form method="dialog">

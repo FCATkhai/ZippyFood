@@ -22,6 +22,7 @@
                         <option value="processing">Đang xử lý</option>
                         <option value="ordering">Đang giao hàng</option>
                         <option value="completed">Hoàn thành</option>
+                        <option value="reviewed">Đã đánh giá</option>
                         <option value="cancelled">Đã hủy</option>
                     </select>
                 </div>
@@ -395,6 +396,7 @@ function translateStatus(status) {
         'processing': 'Đang xử lý',
         'ordering': 'Đang giao hàng',
         'completed': 'Hoàn thành',
+        'reviewed': 'Đã đánh giá',
         'cancelled': 'Đã hủy'
     };
     return statusMap[status] || status;
@@ -406,6 +408,7 @@ function getStatusBadgeClass(status) {
         'processing': 'badge badge-info',
         'ordering': 'badge badge-primary',
         'completed': 'badge badge-success',
+        'reviewed': 'badge badge-accent',
         'cancelled': 'badge badge-error'
     };
     return classMap[status] || 'badge';
