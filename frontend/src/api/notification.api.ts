@@ -61,6 +61,21 @@ export const createNotification = async (data: {
 };
 
 /**
+ * Tạo thông báo mới với id được chèn vào :notificationId của url
+ * @param data Notification data
+ * @returns Created notification
+ */
+export const createNotificationWithId = async (data: {
+    user_id: string;
+    title: string;
+    content: string;
+    url?: string;
+}) => {
+    const res = await axios.post<IApiResponse<INotification>>(`${API_URL}/withId`, data);
+    return res.data;
+};
+
+/**
  * Kiểm tra xem user có thông báo chưa đọc hay không
  * @returns Boolean indicating if there are unread notifications
  */

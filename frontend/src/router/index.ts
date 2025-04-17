@@ -53,7 +53,16 @@ const routes = [
     {
         path: '/notifications',
         name: 'order-notifications',
-        component: () => import('@/views/NotificationView.vue'),
+        component: () => import('@/views/Notification/NotificationsView.vue'),
+        meta: {
+            layout: AppLayout,
+            requireAuth: true
+        }
+    },
+    {
+        path: '/notification/:id',
+        name: 'notification-detail',
+        component: () => import('@/views/Notification/NotificationDetailView.vue'),
         meta: {
             layout: AppLayout,
             requireAuth: true

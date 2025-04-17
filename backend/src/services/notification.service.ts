@@ -36,6 +36,30 @@ class NotificationService {
     }
 
     /**
+     * Tạo thông báo mới với id được chèn vào :notificationId của data.url
+     * @param data Dữ liệu thông báo
+     * @returns Thông báo đã được tạo kèm url có id
+     */
+    async createNotificationWithId(data: Partial<INotification>): Promise<INotification> {
+        try {
+            const notification = await this.notificationModel.create({
+                user_id: data.user_id,
+                title: data.title,
+                content: data.content,
+                url: "",
+                is_read: data.is_read || false,
+            });
+            const url = data.url?.replace(":notificationId", notification._id.toString());
+            notification.url = url;
+            await notification.save();
+
+            return notification;
+        } catch (error) {
+            throw new Error(`Không thể tạo thông báo: ${(error as Error).message}`);
+        }
+    }
+
+    /**
      * Lấy thông báo theo ID
      * @param id ID thông báo
      * @returns Thông báo hoặc null nếu không tìm thấy

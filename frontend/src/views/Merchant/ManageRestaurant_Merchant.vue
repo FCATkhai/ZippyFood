@@ -1,6 +1,6 @@
 <script lang="ts" setup>
 import { ref, onMounted, computed } from "vue";
-import { useRestaurantStore } from "@/stores/restaurantStore"; // Adjust path as needed
+import { useRestaurantStore } from "@/stores/restaurantStore";
 import { useRestaurant } from "@/composables/useRestaurant";
 import { useAuthStore } from "@/stores/auth.store";
 import { useToast } from "vue-toastification";
@@ -27,6 +27,8 @@ const openHours = ref<IOpenHours[]>([
     { day: "Saturday", time_slots: [] },
     { day: "Sunday", time_slots: [] },
 ]);
+const status = ref("");
+const isSuspended = computed(() => status.value === RESTAURANT_STATUSES.SUSPENDED);
 const loading = ref(false);
 const thumbnailPreview = ref<string | null>(null); // For displaying thumbnail
 const togglingActive = ref(false); // Separate loading state for toggle
@@ -37,19 +39,18 @@ const restaurantStatus = computed(() => restaurantStore.restaurant?.status);
 
 // Initialize data
 const loadRestaurantData = async () => {
-    if (!restaurantStore.restaurant) {
         try {
             await restaurantStore.fetchRestaurant(authStore.user?._id);
         } catch (error) {
             toast.error("Không thể tải thông tin nhà hàng");
             return;
         }
-    }
 
     if (restaurantStore.restaurant) {
         name.value = restaurantStore.restaurant.name;
         phone.value = restaurantStore.restaurant.phone || "";
         address.value = restaurantStore.restaurant.location?.address || "";
+        status.value = restaurantStore.restaurant.status;
         thumbnailPreview.value = restaurantStore.restaurant.thumbnail || null;
         openHours.value = restaurantStore.restaurant.open_hours.length
             ? restaurantStore.restaurant.open_hours
@@ -179,11 +180,13 @@ const submitChanges = async () => {
         </div>
 
         <h1 class="text-2xl font-bold mb-6">Quản Lý Nhà Hàng</h1>
-
+        <h2 v-if="isSuspended" class="text-error text-xl font-bold mb-3">
+            Nhà hàng đang bị tạm khoá. Liên hệ trợ giúp để được hỗ trợ.
+        </h2>
         <!-- Edit and Toggle Buttons -->
         <div class="mb-4 flex justify-between">
             <button @click="toggleActive" :class="restaurantStatus === RESTAURANT_STATUSES.CLOSING ? 'btn btn-warning' : 'btn btn-success'"
-                :disabled="togglingActive || loading">
+                :disabled="togglingActive || loading || isSuspended">
                 <span v-if="togglingActive" class="loading loading-spinner"></span>
                 {{ togglingActive ? "Đang xử lý..." : restaurantStatus === RESTAURANT_STATUSES.CLOSING ? "Đóng cửa hàng" : "Mở cửa hàng" }}
             </button>

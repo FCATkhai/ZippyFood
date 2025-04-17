@@ -3,7 +3,7 @@ import { Request, Response, NextFunction } from "express";
 import Notification from "../models/Notification.model";
 import { INotification } from "~/shared/interface";
 import { FilterQuery } from "mongoose";
-
+import notificationService from "../services/notification.service";
 /**
  * Lấy danh sách thông báo của user
  * @route GET /api/notifications
@@ -73,7 +73,7 @@ export const createNotification = async (req: Request, res: Response, next: Next
     try {
         const { user_id, title, content, url } = req.body;
 
-        if (!user_id || !title || !content) {
+        if (!user_id || !title) {
             res.status(400);
             throw new Error("Missing required fields");
         }
@@ -86,6 +86,34 @@ export const createNotification = async (req: Request, res: Response, next: Next
         });
 
         await newNotification.save();
+
+        res.status(201).json({ success: true, message: "Notification created", notification: newNotification });
+    } catch (error) {
+        next(error);
+    }
+};
+
+/**
+ * Tạo thông báo mới với id được chèn vào :notificationId của url
+ * @route POST /api/notifications/withId
+ * @access Private (Admin hoặc hệ thống)
+ */
+export const createNotificationWithId = async (req: Request, res: Response, next: NextFunction) => {
+    try {
+        const { user_id, title, content, url } = req.body;
+
+        if (!user_id || !title || !url) {
+            res.status(400);
+            throw new Error("Missing required fields");
+        }
+
+        const data = {
+            user_id,
+            title,
+            content,
+            url
+        }
+        const newNotification: INotification = await notificationService.createNotificationWithId(data);
 
         res.status(201).json({ success: true, message: "Notification created", notification: newNotification });
     } catch (error) {

@@ -5,6 +5,7 @@ import {
     getRestaurantById,
 } from "@/api/restaurant.api";
 import type { IRestaurant } from "~/shared/interface";
+import { RESTAURANT_STATUSES } from "~/shared/constant";
 
 export function useRestaurant() {
     const restaurants = ref<IRestaurant[]>([]);
@@ -15,7 +16,7 @@ export function useRestaurant() {
     const hasMore = ref(true);
     const loading = ref(false);
     const searchTerm = ref("");
-    const isActiveFilter = ref<string>("true");
+    const statusFilter = ref<string>(RESTAURANT_STATUSES.OPENING);
     const minRatingFilter = ref<number>(0);
     const sortBy = ref<"createdAt" | "rating">("createdAt");
     const sortOrder = ref<"asc" | "desc">("desc");
@@ -38,7 +39,7 @@ export function useRestaurant() {
                 page: page.value,
                 limit: limit.value,
                 search: searchTerm.value,
-                is_active: isActiveFilter.value,
+                status: statusFilter.value,
                 min_rating: minRatingFilter.value,
                 sort_by: sortBy.value,
                 sort: sortOrder.value,
@@ -74,7 +75,7 @@ export function useRestaurant() {
     };
 
     // Watch for filter changes with debounce
-    watch([searchTerm, isActiveFilter, minRatingFilter, sortBy, sortOrder], () => {
+    watch([searchTerm, statusFilter, minRatingFilter, sortBy, sortOrder], () => {
         if (searchTimeout) clearTimeout(searchTimeout);
         searchTimeout = setTimeout(() => {
             fetchRestaurants(true);
@@ -95,7 +96,7 @@ export function useRestaurant() {
         hasMore,
         loading,
         searchTerm,
-        isActiveFilter,
+        statusFilter,
         minRatingFilter,
         sortBy,
         sortOrder,

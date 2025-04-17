@@ -8,6 +8,7 @@ import {
     markAsRead,
     markAsReadAll,
     deleteNotification,
+    createNotificationWithId,
 } from "@/api/notification.api";
 import type { INotification } from "~/shared/interface";
 
@@ -73,20 +74,26 @@ export function useNotification() {
     }
 
     /**
-     * Create a new notification
+     * Create a new notification, if url have :notificationId, it will be replace with id of created notification
      */
     async function create(data: { user_id: string; title: string; content: string; url?: string }) {
         loading.value = true;
         error.value = null;
         try {
-            const response: IApiResponse<INotification> = await createNotification(data);
+            let response: IApiResponse<INotification>;
+            if (data.url && data.url.includes(":notificationId")) {
+                console.log("aaa")
+                response  = await createNotificationWithId(data);
+            } else {
+                response  = await createNotification(data);
+            }
             if (response.success && response.notification) {
                 notification.value = response.notification;
                 // Optionally add to the list if on the first page
-                if (page.value === 1) {
-                    notifications.value.unshift(response.notification);
-                    total.value += 1;
-                }
+                // if (page.value === 1) {
+                //     notifications.value.unshift(response.notification);
+                //     total.value += 1;
+                // }
             } else {
                 throw new Error(response.message || "Failed to create notification");
             }

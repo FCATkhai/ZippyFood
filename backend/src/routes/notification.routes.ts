@@ -2,6 +2,7 @@ import express from "express";
 import {
     getNotifications,
     createNotification,
+    createNotificationWithId,
     hasUnreadNotifications,
     countUnreadNotifications,
     markAsRead,
@@ -16,6 +17,7 @@ const router = express.Router();
 router.get("/has-unread", authorize(), hasUnreadNotifications);
 router.get("/count-unread", authorize(), countUnreadNotifications);
 router.get("/", authorize(), getNotifications);
+router.post("/withId", authorize(), createNotificationWithId);
 router.post("/", authorize(), createNotification);
 router.patch("/:id/read", authorize(), markAsRead);
 router.patch("/read-all", authorize(), markAsReadAll);

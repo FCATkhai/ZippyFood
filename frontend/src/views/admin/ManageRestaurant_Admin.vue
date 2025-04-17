@@ -4,7 +4,7 @@ import { useRestaurant } from "@/composables/useRestaurant";
 import { useToast } from "vue-toastification";
 import type { IRestaurant } from "~/shared/interface";
 import { RESTAURANT_STATUSES, type RestaurantStatus } from "~/shared/constant";
-
+import { useNotification } from "@/composables/useNotification";
 const {
     restaurants,
     page,
@@ -20,13 +20,14 @@ const {
     updateExistingRestaurant,
     removeRestaurant,
 } = useRestaurant();
-
+const notification = useNotification();
 const toast = useToast();
 const closeDeleteModalBtn = useTemplateRef("closeDeleteModalBtn");
-
+const closeLockModalBtn = useTemplateRef("closeLockModalBtn");
 const selectedRestaurant = ref<IRestaurant | null>(null);
-const deletingId = ref<string | null>(null);
-
+const editingId = ref<string | null>(null);
+const lockingId = ref<string | null>(null);
+const lockNote = ref<string | null>(null);
 // Fetch restaurants on mount
 onMounted(() => {
     fetchRestaurants(true);
@@ -40,8 +41,14 @@ const showDetailsModal = (restaurant: IRestaurant) => {
 };
 
 const showDeleteModal = (id: string) => {
-    deletingId.value = id;
+    editingId.value = id;
     const modal = document.getElementById("delete_modal") as HTMLDialogElement;
+    if (modal) modal.showModal();
+};
+
+const showLockModal = (restaurant: IRestaurant) => {
+    selectedRestaurant.value = restaurant;
+    const modal = document.getElementById("lock_modal") as HTMLDialogElement;
     if (modal) modal.showModal();
 };
 
@@ -58,27 +65,53 @@ const handleUpdateStatus = async (restaurant: IRestaurant) => {
         }
 
         await updateExistingRestaurant(restaurantId, { status: updateStatus });
+        if (updateStatus === RESTAURANT_STATUSES.SUSPENDED) {
+            const data = {
+                user_id: restaurant.owner_id,
+                title: "Cửa hàng của bạn đã bị khoá",
+                content: lockNote.value || "",
+                url: "/notification/:notificationId"
+            }
+            await notification.create(data);
+        } else {
+            const data = {
+                user_id: restaurant.owner_id,
+                title: "Cửa hàng của bạn đã được mở khoá",
+                content: "",
+                url: "/restaurant-manage/setting"
+            }
+            await notification.create(data);
+        }
+
+
         toast.success(updateStatus !== RESTAURANT_STATUSES.SUSPENDED ? "Đã mở khoá nhà hàng" : "Đã khoá nhà hàng");
         if (selectedRestaurant.value && selectedRestaurant.value._id === restaurantId) {
             selectedRestaurant.value.status = updateStatus as RestaurantStatus;
         }
     } catch (error: any) {
         toast.error(error.response?.data?.message || "Lỗi khi cập nhật trạng thái");
+    } finally {
+        closeLockModalBtn.value?.click();
     }
 };
 
 const handleDelete = async () => {
-    if (!deletingId.value) return;
+    if (!editingId.value) return;
     try {
-        await removeRestaurant(deletingId.value);
+        await removeRestaurant(editingId.value);
         toast.success("Đã xóa nhà hàng thành công");
-        deletingId.value = null;
+        editingId.value = null;
     } catch (error: any) {
         toast.error(error.response?.data?.message || "Lỗi khi xóa nhà hàng");
     } finally {
         closeDeleteModalBtn.value?.click();
     }
 };
+
+const resetLockForm = () => {
+    lockNote.value = "";
+    editingId.value = null;
+}
 
 // Pagination
 const nextPage = () => {
@@ -111,8 +144,8 @@ const prevPage = () => {
                 <option :value="RESTAURANT_STATUSES.CLOSING">Không hoạt động</option>
                 <option :value="RESTAURANT_STATUSES.SUSPENDED">Bị khoá</option>
             </select>
-            <input v-model.number="minRatingFilter" type="number" min="0" max="5"
-                placeholder="Điểm đánh giá tối thiểu" class="input input-bordered w-32" />
+            <input v-model.number="minRatingFilter" type="number" min="0" max="5" placeholder="Điểm đánh giá tối thiểu"
+                class="input input-bordered w-32" />
             <select v-model="sortBy" class="select select-bordered">
                 <option value="createdAt">Ngày tạo</option>
                 <option value="rating">Điểm đánh giá</option>
@@ -189,8 +222,8 @@ const prevPage = () => {
                 </div>
                 <div>
                     <p><strong>Thumbnail:</strong>
-                        <img v-if="selectedRestaurant.thumbnail" :src="selectedRestaurant.thumbnail"
-                             alt="Thumbnail" class="w-32 h-32 object-cover" />
+                        <img v-if="selectedRestaurant.thumbnail" :src="selectedRestaurant.thumbnail" alt="Thumbnail"
+                            class="w-32 h-32 object-cover" />
                         <span v-else>Chưa có</span>
                     </p>
                     <p><strong>Ngày Tạo:</strong> {{ new Date(selectedRestaurant.createdAt).toLocaleDateString() }}</p>
@@ -199,7 +232,7 @@ const prevPage = () => {
             </div>
             <div class="modal-action flex justify-between">
                 <div v-if="selectedRestaurant" class="space-x-2">
-                    <button @click="handleUpdateStatus(selectedRestaurant)"
+                    <button @click="selectedRestaurant.status !== RESTAURANT_STATUSES.SUSPENDED ? showLockModal(selectedRestaurant) : handleUpdateStatus(selectedRestaurant)"
                         :class="selectedRestaurant.status !== RESTAURANT_STATUSES.SUSPENDED ? 'btn btn-error' : 'btn btn-success'"
                         :disabled="loading">
                         {{ selectedRestaurant.status !== RESTAURANT_STATUSES.SUSPENDED ? "Khoá" : "Mở khoá" }}
@@ -209,6 +242,34 @@ const prevPage = () => {
                     <button class="btn">Đóng</button>
                 </form>
             </div>
+        </div>
+    </dialog>
+
+    <!-- Lock confirmation modal -->
+    <dialog id="lock_modal" class="modal">
+        <div class="modal-box w-11/12 max-w-2xl">
+            <fieldset v-if="selectedRestaurant" class="mx-auto fieldset w-lg bg-base-200 border border-base-300 p-4 rounded-box">
+                <legend class="fieldset-legend text-xl font-bold">Xác Nhận Khoá</legend>
+                <p class="text-lg mb-4">Bạn có chắc chắn muốn khoá nhà hàng này không?</p>
+                <form @submit.prevent="handleUpdateStatus(selectedRestaurant)">
+                    <label class="fieldset-label text-lg mb-3">Lý do khoá<span class="text-error">*</span></label>
+                    <textarea v-model="lockNote" class="textarea textarea-bordered w-90"
+                    rows="6"
+                        placeholder="Nhập lý do khoá tại đây..." required></textarea>
+                    <div class="modal-action">
+                        <div v-if="loading">
+                            <span class="loading loading-spinner loading-xl"></span>
+                            <p>Loading</p>
+                        </div>
+                        <button class="btn btn-error" type="submit" :disabled="loading">Khoá</button>
+                        <form method="dialog">
+                            <button ref="closeLockModalBtn" class="btn" @click="resetLockForm"
+                                :disabled="loading">Hủy</button>
+                        </form>
+                    </div>
+                </form>
+
+            </fieldset>
         </div>
     </dialog>
 
@@ -225,7 +286,7 @@ const prevPage = () => {
                     </div>
                     <button class="btn btn-error" @click="handleDelete" :disabled="loading">Xóa</button>
                     <form method="dialog">
-                        <button ref="closeDeleteModalBtn" class="btn" @click="deletingId = null"
+                        <button ref="closeDeleteModalBtn" class="btn" @click="editingId = null"
                             :disabled="loading">Hủy</button>
                     </form>
                 </div>
