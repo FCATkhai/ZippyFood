@@ -8,7 +8,7 @@ import cartRoutes from './cart.routes';
 import orderRoutes from './order.routes';
 import notificationRoutes from './notification.routes';
 import reviewRoutes from './review.routes';
-
+import reportRoutes from './report.routes';
 
 const router = express.Router();
 
@@ -21,5 +21,6 @@ router.use('/cart', cartRoutes);
 router.use('/orders', orderRoutes);
 router.use('/notifications', notificationRoutes);
 router.use('/reviews', reviewRoutes);
+router.use('/stats', reportRoutes);
 
 export default router;

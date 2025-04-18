@@ -88,6 +88,7 @@ export interface IProduct extends Document {
     description?: string;
     tags?: string[];
     image: string;
+    sales_count: number;
     price: number;
     discount?: number;
     final_price: number;
@@ -132,6 +133,7 @@ export interface IOrder extends Document {
     note?: string;
     status: "pending" | "processing" | "ordering" | "completed" | "reviewed" | "cancelled";
     order_date: Date;
+    completed_at?: Date;
 }
 
 // notification interface
@@ -159,6 +161,34 @@ export interface IReview extends Document {
     image?: string | null;
     createdAt: Date;
     updatedAt: Date;
+}
+//----------- Statistic --------------
+interface ITopProduct {
+    product_id: Types.ObjectId;
+    name: string;
+    totalSold: number;
+}
+
+interface ITopProductAdmin extends ITopProduct {
+    restaurant_id: Types.ObjectId;
+}
+export interface IMerchantReport extends Document {
+    restaurant_id: Types.ObjectId;
+    period: 'daily' | 'monthly';
+    report_date: Date;
+    completed_orders: number;
+    revenue: number;
+    top_products: ITopProduct[];
+}
+
+export interface IAdminReport extends Document {
+    period: 'daily' | 'monthly';
+    report_date: Date;
+    total_orders: number;
+    total_revenue: number;
+    top_products: ITopProductAdmin[];
+    total_users: number;
+    total_restaurants: number;
 }
 
 //-------------------------

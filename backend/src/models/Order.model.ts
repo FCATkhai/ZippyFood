@@ -19,6 +19,7 @@ const OrderSchema: Schema = new Schema({
     note: { type: String },
     status: { type: String, enum: ORDER_STATUS_VALUES, default: ORDER_STATUSES.PENDING},
     order_date: { type: Date, default: Date.now },
+    completed_at: { type: Date }
 }, { timestamps: true });
 
 const Order: Model<IOrder> = mongoose.model<IOrder>('Order', OrderSchema);

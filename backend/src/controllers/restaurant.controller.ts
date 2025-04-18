@@ -7,7 +7,7 @@ import { deleteImage } from "../middleware/upload";
 import { FilterQuery } from "mongoose";
 import Product from "../models/Product.model";
 import { IRestaurant } from "~/shared/interface";
-import { RESTAURANT_STATUS_VALUES, RESTAURANT_STATUSES, RestaurantStatus } from "~/shared/constant";
+import { RESTAURANT_STATUS_VALUES, RestaurantStatus } from "~/shared/constant";
 
 /**
  * Tạo nhà hàng
@@ -52,11 +52,11 @@ export const getRestaurants = async (req: Request, res: Response, next: NextFunc
             page = 1,
             limit = 10,
             search = "",
-            status = "", // Changed from is_active to status
+            status = "",
             min_rating = 0,
-            sort_by = "createdAt", // Default sort by createdAt
-            sort = "desc", // Default sort descending
-            check_open = "false" // Check if restaurant is open now
+            sort_by = "createdAt",
+            sort = "desc",
+            check_open = "false"
         } = req.query;
 
         // Convert query params to appropriate types
@@ -68,19 +68,29 @@ export const getRestaurants = async (req: Request, res: Response, next: NextFunc
         // Build query object
         const query: FilterQuery<IRestaurant> = {};
 
-        // Search by name or phone
+        // Search by name, phone, product name, or product tags
         if (search) {
+            // First, find products matching the search term in name or tags
+            const productQuery = {
+                $or: [
+                    { name: { $regex: search, $options: "i" } },
+                    { tags: { $regex: search, $options: "i" } }
+                ]
+            };
+
+            // Get restaurant IDs from matching products
+            const matchingProducts = await Product.find(productQuery).select('restaurant_id');
+            const matchingRestaurantIds = matchingProducts.map(product => product.restaurant_id);
+
             query.$or = [
                 { name: { $regex: search, $options: "i" } },
-                { phone: { $regex: search, $options: "i" } }
+                { _id: { $in: matchingRestaurantIds } }
             ];
         }
 
         // Filter by status
         if (status) {
-            // Validate status value
-            const validStatuses = Object.values(RESTAURANT_STATUSES);
-            if (validStatuses.includes(status as RestaurantStatus)) {
+            if (RESTAURANT_STATUS_VALUES.includes(status as RestaurantStatus)) {
                 query.status = status;
             } else {
                 res.status(400);
@@ -97,7 +107,7 @@ export const getRestaurants = async (req: Request, res: Response, next: NextFunc
         if (check_open === "true") {
             const now = new Date();
             const currentDay = now.toLocaleString('en-US', { weekday: 'long' });
-            const currentTime = now.toTimeString().slice(0, 5); // Get HH:MM format
+            const currentTime = now.toTimeString().slice(0, 5);
 
             query.open_hours = {
                 $elemMatch: {
@@ -144,7 +154,6 @@ export const getRestaurants = async (req: Request, res: Response, next: NextFunc
         next(error);
     }
 };
-
 /**
  * Lấy thông tin chi tiết nhà hàng
  * @route GET /api/restaurants/:id

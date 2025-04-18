@@ -19,7 +19,6 @@ export const ORDER_STATUSES = {
     COMPLETED: 'completed',
     REVIEWED: 'reviewed',
     CANCELLED: 'cancelled',
-    RETURNED: 'returned'
 } as const;
 
 export const ORDER_STATUS_VALUES = [

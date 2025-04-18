@@ -18,6 +18,7 @@ const ProductSchema: Schema = new Schema({
     image: {
         type: String, require: true
     },
+    sales_count: {type: Number, default: 0},
     price: {
         type: Number, require: true
     },

@@ -185,10 +185,10 @@ const submitChanges = async () => {
         </h2>
         <!-- Edit and Toggle Buttons -->
         <div class="mb-4 flex justify-between">
-            <button @click="toggleActive" :class="restaurantStatus === RESTAURANT_STATUSES.CLOSING ? 'btn btn-warning' : 'btn btn-success'"
+            <button @click="toggleActive" :class="restaurantStatus === RESTAURANT_STATUSES.CLOSING ? 'btn btn-success' : 'btn btn-warning'"
                 :disabled="togglingActive || loading || isSuspended">
                 <span v-if="togglingActive" class="loading loading-spinner"></span>
-                {{ togglingActive ? "Đang xử lý..." : restaurantStatus === RESTAURANT_STATUSES.CLOSING ? "Đóng cửa hàng" : "Mở cửa hàng" }}
+                {{ togglingActive ? "Đang xử lý..." : restaurantStatus === RESTAURANT_STATUSES.CLOSING ? "Mở cửa hàng" : "Đóng cửa hàng" }}
             </button>
             <button @click="toggleEdit" class="btn btn-primary" :disabled="loading || togglingActive">
                 {{ isEditing ? "Hủy" : "Chỉnh sửa" }}

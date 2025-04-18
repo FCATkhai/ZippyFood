@@ -2,8 +2,8 @@ import { Types } from 'mongoose';
 import Order from '../models/Order.model'; 
 import { USER_ROLES } from '../config/constants';
 import { IOrder } from '~/shared/interface'; 
-import { OrderStatus } from '~/shared/constant';
-
+import { ORDER_STATUSES, OrderStatus } from '~/shared/constant';
+import Product from '../models/Product.model';
 class OrderService {
     /**
      * Cập nhật trạng thái đơn hàng
@@ -33,13 +33,22 @@ class OrderService {
         ) {
             throw new Error('Bạn không có quyền cập nhật đơn hàng này');
         }
-
         // Update status
         order.status = status as IOrder['status'];
+        if (status === ORDER_STATUSES.COMPLETED) {
+            order.completed_at = new Date();
+            //TODO: Change to use service later
+            const updatePromises = order.products.map(async (product) => {
+                const foundProduct = await Product.findById(product.product_id);
+                if (foundProduct) {
+                    foundProduct.sales_count += product.quantity;
+                    return foundProduct.save(); // Trả về Promise
+                }
+            });
+            const validPromises = updatePromises.filter(p => p !== undefined);
+            await Promise.all(validPromises); // consider Promise.allSettle()
+        }
         await order.save();
-
-        
-
         return order;
     }
 }

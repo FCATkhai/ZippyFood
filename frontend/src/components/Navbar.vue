@@ -90,7 +90,7 @@ import { computed, onMounted } from 'vue';
 import { useAuthStore } from '@/stores/auth.store';
 import { useRouter, useRoute, RouterLink } from 'vue-router';
 import { USER_ROLES } from '~/shared/userRoles';
-import CardIcon from './CardIcon.vue';
+import CardIcon from './CartIcon.vue';
 import NotificationIcon from './NotificationIcon.vue';
 
 const authStore = useAuthStore();

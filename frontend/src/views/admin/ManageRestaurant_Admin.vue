@@ -61,7 +61,7 @@ const handleUpdateStatus = async (restaurant: IRestaurant) => {
         if (currentStatus !== RESTAURANT_STATUSES.SUSPENDED) {
             updateStatus = RESTAURANT_STATUSES.SUSPENDED;
         } else {
-            updateStatus = RESTAURANT_STATUSES.CLOSING;
+            updateStatus = RESTAURANT_STATUSES.OPENING;
         }
 
         await updateExistingRestaurant(restaurantId, { status: updateStatus });
