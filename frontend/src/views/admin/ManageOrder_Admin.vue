@@ -196,13 +196,7 @@
                     </div>
                 </div>
 
-                <div class="bg-base-200 p-3 rounded-lg">
-                    <p class="text-sm">
-                        <i class="fas fa-info-circle mr-2"></i>
-                        Admin chỉ có quyền xem thông tin đơn hàng. Để thay đổi trạng thái đơn hàng, vui lòng liên hệ với
-                        nhà hàng.
-                    </p>
-                </div>
+
 
                 <div class="modal-action">
                     <button class="btn" @click="closeOrderDetail">Đóng</button>

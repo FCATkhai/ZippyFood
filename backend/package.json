@@ -23,7 +23,9 @@
         "mongodb": "^6.14.0",
         "mongoose": "^8.11.0",
         "multer": "^1.4.5-lts.1",
-        "tsx": "^4.19.3"
+        "node-cron": "^3.0.3",
+        "tsx": "^4.19.3",
+        "winston": "^3.17.0"
     },
     "devDependencies": {
         "@eslint/js": "^9.21.0",
@@ -34,6 +36,7 @@
         "@types/jsonwebtoken": "^9.0.9",
         "@types/multer": "^1.4.12",
         "@types/node": "^22.13.5",
+        "@types/node-cron": "^3.0.11",
         "esbuild": "^0.25.0",
         "eslint": "^9.21.0",
         "globals": "^16.0.0",

@@ -5,6 +5,8 @@ import { useToast } from "vue-toastification";
 import type { IRestaurant } from "~/shared/interface";
 import { RESTAURANT_STATUSES, type RestaurantStatus } from "~/shared/constant";
 import { useNotification } from "@/composables/useNotification";
+import RestaurantStatsModal from "@/components/RestaurantStatsModal.vue";
+
 const {
     restaurants,
     page,
@@ -125,6 +127,20 @@ const prevPage = () => {
         page.value--;
     }
 };
+
+// stat modal
+const restaurantStatsModal = ref<{ openModal: () => void } | null>(null);
+const selectedRestaurantId = ref('');
+const selectedRestaurantName = ref('');
+
+const viewRestaurantStats = (id: string, name: string) => {
+  selectedRestaurantId.value = id;
+  selectedRestaurantName.value = name;
+  if (restaurantStatsModal.value) {
+      restaurantStatsModal.value.openModal();
+  }
+};
+
 </script>
 
 <template>
@@ -228,6 +244,12 @@ const prevPage = () => {
                     </p>
                     <p><strong>Ngày Tạo:</strong> {{ new Date(selectedRestaurant.createdAt).toLocaleDateString() }}</p>
                     <p><strong>Chủ Sở Hữu:</strong> {{ selectedRestaurant.owner_id }}</p>
+                    <button
+            class="btn btn-sm btn-primary"
+            @click="viewRestaurantStats(selectedRestaurant._id, selectedRestaurant.name)"
+          >
+            Xem thống kê
+          </button>
                 </div>
             </div>
             <div class="modal-action flex justify-between">
@@ -244,6 +266,13 @@ const prevPage = () => {
             </div>
         </div>
     </dialog>
+
+    <!-- Restaurant Stats Modal -->
+    <RestaurantStatsModal
+      ref="restaurantStatsModal"
+      :restaurant-id="selectedRestaurantId"
+      :restaurant-name="selectedRestaurantName"
+    />
 
     <!-- Lock confirmation modal -->
     <dialog id="lock_modal" class="modal">

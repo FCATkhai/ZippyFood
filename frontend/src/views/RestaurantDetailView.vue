@@ -1,7 +1,13 @@
 <template>
     <div class="container px-20 py-8">
         <div v-if="restaurant">
-            <h1 class="text-2xl font-bold">{{ restaurant.name }}</h1>
+            <div class="flex gap-5 items-center">
+                <h1 class="text-2xl font-bold">{{ restaurant.name }}</h1>
+                <div v-if="restaurant.rating !== 0" class="text-2xl">
+                <i class="fa-solid fa-star text-orange-400 "></i> <span class="font-bold">{{ restaurant.rating }}</span>
+            </div>
+            </div>
+
             <div class="flex gap-10">
                 <p>Giờ mở cửa</p>
                 <p>Hôm nay {{ working_hours }}</p>
@@ -14,8 +20,8 @@
                 <p>Địa chỉ</p>
                 <p>{{ restaurant.location.address }}</p>
             </div>
+
             <div class="menu-container">
-                <!-- Category tabs navigation -->
                 <!-- Category tabs navigation -->
                 <div class="category-tabs overflow-x-auto whitespace-nowrap mb-4 border-b sticky top-0 bg-base-100 z-1">
                     <button v-for="(category, index) in Object.keys(groupedProducts)" :key="index"
@@ -42,9 +48,12 @@
                                         <img :src="product.image" :alt="product.name"
                                             class="w-full h-full object-cover" />
                                     </div>
-                                    <div class="product-info p-4 flex-1">
+                                    <div class="product-info p-4 flex-1 relative">
                                         <h3 class="text-lg font-semibold">{{ product.name }}</h3>
                                         <p class="text-gray-400">{{ product?.description }}</p>
+                                        <div class="absolute top-3 right-5" v-if="product.rating !== 0">
+                                            <i class="fa-solid fa-star text-orange-400"></i> {{ product.rating }}
+                                        </div>
                                         <div class="mt-4 flex items-center justify-between">
                                             <div>
                                                 <p v-if="product.final_price !== product.price"
@@ -95,7 +104,7 @@
                                     </div>
                                 </div>
 
-                                <div class="flex justify-between py-4">
+                                <div class="flex justify-between py-4 border-b mb-5">
                                     <div class="flex items-center mr-4" @click.stop>
                                         <button class="text-xl text-primary font-bold px-2" :disabled="updatingItem"
                                             @click="updateQuantity(-1)">
@@ -110,25 +119,33 @@
                                             +
                                         </button>
                                     </div>
-                                    <button v-if="itemQuantity === 0 && selectedItem" class="btn btn-error py-4 text-white font-medium rounded-md"
+                                    <button v-if="itemQuantity === 0 && selectedItem"
+                                        class="btn btn-error py-4 text-white font-medium rounded-md"
                                         @click="deleteItemFromCart">
                                         Xoá khỏi giỏ hàng
                                     </button>
-                                    <button v-else-if="itemQuantity === 0" class="btn btn-error py-4 text-white font-medium rounded-md"
+                                    <button v-else-if="itemQuantity === 0"
+                                        class="btn btn-error py-4 text-white font-medium rounded-md"
                                         @click="toggleDrawer">
                                         Huỷ
                                     </button>
-                                    <button v-else-if="!selectedItem" class="btn btn-primary py-4 text-white font-medium rounded-md"
+                                    <button v-else-if="!selectedItem"
+                                        class="btn btn-primary py-4 text-white font-medium rounded-md"
                                         @click="handleDetailProductSubmit">
-                                        Thêm vào giỏ hàng - {{ formatPrice(selectedProduct.final_price * itemQuantity) }}
+                                        Thêm vào giỏ hàng - {{ formatPrice(selectedProduct.final_price * itemQuantity)
+                                        }}
                                         ₫
                                     </button>
                                     <button v-else class="btn btn-primary py-4 text-white font-medium rounded-md"
                                         @click="handleDetailProductSubmit">
-                                        Cập nhật giỏ hàng - {{ formatPrice(selectedProduct.final_price * itemQuantity) }}
+                                        Cập nhật giỏ hàng - {{ formatPrice(selectedProduct.final_price * itemQuantity)
+                                        }}
                                         ₫
                                     </button>
                                 </div>
+
+                                <!-- Product review -->
+                                <ProductReview :productId="selectedProduct._id" :perPage="5"/>
                             </template>
                         </div>
                     </ul>
@@ -149,7 +166,7 @@ import { onMounted, ref, computed, watch } from "vue";
 import type { ICartItem, IProduct, IRestaurant } from "~/shared/interface";
 import { useAuthStore } from '@/stores/auth.store';
 import { useCartStore } from '@/stores/cart.store';
-
+import ProductReview from "@/components/ProductReview.vue";
 
 // Store instances
 const authStore = useAuthStore();

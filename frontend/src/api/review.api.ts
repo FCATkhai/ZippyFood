@@ -5,7 +5,7 @@ import type { IReview } from '~/shared/interface';
 interface IApiResponse<T> {
     success: boolean;
     message?: string;
-    data?: T; // Single review
+    review?: T; // Single review
     reviews?: T[]; // Array of reviews
     pagination?: {
         total: number;

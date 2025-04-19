@@ -59,7 +59,7 @@ export const createReview = async (req: Request, res: Response, next: NextFuncti
         res.status(201).json({
             success: true,
             message: 'Đánh giá đã được tạo thành công',
-            data: review,
+            review,
         });
     } catch (error) {
         next(error);
@@ -84,7 +84,7 @@ export const getReviewById = async (req: Request, res: Response, next: NextFunct
         res.json({
             success: true,
             message: 'Lấy đánh giá thành công',
-            data: review,
+            review,
         });
     } catch (error) {
         next(error);
@@ -132,7 +132,7 @@ export const getReviews = async (req: Request, res: Response, next: NextFunction
         res.json({
             success: true,
             message: 'Lấy danh sách đánh giá thành công',
-            data: result.reviews,
+            reviews: result.reviews,
             pagination: {
                 total: result.total,
                 page: result.page,
@@ -189,7 +189,7 @@ export const updateReview = async (req: Request, res: Response, next: NextFuncti
         res.json({
             success: true,
             message: 'Cập nhật đánh giá thành công',
-            data: updatedReview,
+            review: updatedReview,
         });
     } catch (error) {
         next(error);

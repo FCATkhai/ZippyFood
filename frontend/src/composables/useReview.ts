@@ -11,7 +11,7 @@ import type { IReview } from '~/shared/interface';
 interface IApiResponse<T> {
     success: boolean;
     message?: string;
-    data?: T; // Single review
+    review?: T; // Single review
     reviews?: T[]; // Array of reviews
     pagination?: {
         total: number;
@@ -83,8 +83,8 @@ export function useReview() {
         error.value = null;
         try {
             const response: IApiResponse<IReview> = await getReviewById(id);
-            if (response.success && response.data) {
-                review.value = response.data;
+            if (response.success && response.review) {
+                review.value = response.review;
             } else {
                 throw new Error(response.message || 'Không thể lấy đánh giá');
             }
@@ -112,14 +112,14 @@ export function useReview() {
         error.value = null;
         try {
             const response: IApiResponse<IReview> = await createReview(data);
-            if (response.success && response.data) {
-                review.value = response.data;
+            if (response.success && response.review) {
+                review.value = response.review;
                 // Add to the list if on the first page and no conflicting filters
                 if (
                     page.value === 1 &&
                     (!data.restaurant_id || !reviews.value.length || reviews.value[0].restaurant_id === data.restaurant_id)
                 ) {
-                    reviews.value.unshift(response.data);
+                    reviews.value.unshift(response.review);
                     total.value += 1;
                 }
             } else {
@@ -149,12 +149,12 @@ export function useReview() {
         error.value = null;
         try {
             const response: IApiResponse<IReview> = await updateReview(id, data);
-            if (response.success && response.data) {
-                review.value = response.data;
+            if (response.success && response.review) {
+                review.value = response.review;
                 // Update the review in the list if it exists
                 const index = reviews.value.findIndex((r) => r._id === id);
                 if (index !== -1) {
-                    reviews.value[index] = response.data;
+                    reviews.value[index] = response.review;
                 }
             } else {
                 throw new Error(response.message || 'Không thể cập nhật đánh giá');

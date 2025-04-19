@@ -163,13 +163,13 @@ export interface IReview extends Document {
     updatedAt: Date;
 }
 //----------- Statistic --------------
-interface ITopProduct {
+export interface ITopProduct {
     product_id: Types.ObjectId;
     name: string;
     totalSold: number;
 }
 
-interface ITopProductAdmin extends ITopProduct {
+export interface ITopProductAdmin extends ITopProduct {
     restaurant_id: Types.ObjectId;
 }
 export interface IMerchantReport extends Document {

@@ -7,7 +7,7 @@ import { FilterQuery, SortOrder } from "mongoose";
 import { deleteImage } from "../middleware/upload";
 import User from "../models/User.model";
 import Product from "../models/Product.model";
-import { NotificationService } from "../services/notification.service";
+import NotificationService from "../services/notification.service";
 
 /**
  * Gửi đơn đăng ký nhà hàng
